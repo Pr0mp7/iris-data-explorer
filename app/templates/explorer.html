@@ -59,6 +59,13 @@
     <li class="nav-item">
         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-evidences" type="button">Evidence</button>
     </li>
+    {% if config.SS_ENABLED %}
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-shadowserver" type="button">
+            Shadowserver <span id="ss-badge" class="badge bg-warning text-dark ms-1" style="display:none">0</span>
+        </button>
+    </li>
+    {% endif %}
 </ul>
 
 <div class="tab-content pt-3" id="entityTabContent">
@@ -114,6 +121,21 @@
             </tr></thead>
         </table>
     </div>
+
+    {% if config.SS_ENABLED %}
+    <div class="tab-pane fade" id="tab-shadowserver">
+        <p class="text-muted small mb-2">
+            Shadowserver events matching IPs, hostnames, and ASNs from this case's IOCs and Assets.
+        </p>
+        <table id="dt-shadowserver" class="table table-striped table-hover" style="width:100%">
+            <thead><tr>
+                <th>Date</th><th>Type</th><th>IP</th><th>Port</th>
+                <th>ASN</th><th>Country</th><th>Hostname</th><th>Tag</th>
+                <th>Severity</th><th>Details</th>
+            </tr></thead>
+        </table>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
 

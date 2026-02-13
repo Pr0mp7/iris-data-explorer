@@ -233,6 +233,87 @@ document.addEventListener('DOMContentLoaded', function () {
         { data: 'file_description', defaultContent: '', render: function (d) { return escapeHtml(truncate(stripHtml(d), 200)); } }
     ]);
 
+    // ── Shadowserver tab (dynamic correlation) ─────────────────
+    var ssTable = document.getElementById('dt-shadowserver');
+    if (ssTable) {
+        var ssColMap = {
+            0: 'report_date', 1: 'report_type', 2: 'ip', 3: 'port',
+            4: 'asn', 5: 'geo', 6: 'hostname', 7: 'tag', 8: 'severity',
+        };
+
+        tables.shadowserver = new DataTable('#dt-shadowserver', $.extend(true, {}, dtDefaults, {
+            ajax: {
+                url: '/api/dt/case/' + CASE_ID + '/shadowserver',
+                dataSrc: 'data',
+                data: function (d) {
+                    if (d.order && d.order.length > 0) {
+                        d.order_column = ssColMap[d.order[0].column] || 'report_date';
+                        d.order_dir = d.order[0].dir || 'desc';
+                    }
+                }
+            },
+            columns: [
+                { data: 'report_date' },
+                { data: 'report_type', render: function (d) { return '<span class="badge bg-warning text-dark">' + escapeHtml(d) + '</span>'; } },
+                { data: 'ip', render: function (d) { return copyBtn(d); } },
+                { data: 'port', defaultContent: '' },
+                { data: 'asn', defaultContent: '' },
+                { data: 'geo', defaultContent: '', render: function (d) { return escapeHtml(d); } },
+                { data: 'hostname', defaultContent: '', render: function (d) { return escapeHtml(d); } },
+                { data: 'tag', defaultContent: '', render: function (d) { return escapeHtml(d); } },
+                { data: 'severity', defaultContent: '', render: function (d) {
+                    if (!d) return '';
+                    var cls = d === 'high' ? 'bg-danger' : d === 'medium' ? 'bg-warning text-dark' : 'bg-secondary';
+                    return '<span class="badge ' + cls + '">' + escapeHtml(d) + '</span>';
+                }},
+                { data: 'raw_data', orderable: false, render: function (d) {
+                    if (!d) return '';
+                    var json = JSON.stringify(d, null, 2);
+                    var preview = JSON.stringify(d).substring(0, 60) + '...';
+                    return '<button class="btn btn-sm btn-outline-secondary ss-expand" ' +
+                           'data-json="' + escapeHtml(json) + '">Expand</button>' +
+                           '<span class="text-muted small ms-1">' + escapeHtml(preview) + '</span>';
+                }}
+            ],
+            order: [[0, 'desc']],
+            language: {
+                emptyTable: 'No Shadowserver matches for this case\'s indicators',
+                search: 'Filter:',
+                processing: '<div class="spinner-border spinner-border-sm" role="status"></div> Loading...'
+            },
+            initComplete: function (settings, json) {
+                // Update badge with hit count
+                var badge = document.getElementById('ss-badge');
+                if (badge && json.recordsTotal > 0) {
+                    badge.textContent = json.recordsTotal.toLocaleString();
+                    badge.style.display = 'inline';
+                }
+            }
+        }));
+
+        // Expand raw_data modal
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('.ss-expand');
+            if (!btn) return;
+            e.preventDefault();
+            var json = btn.getAttribute('data-json');
+            var modal = document.createElement('div');
+            modal.className = 'modal fade';
+            modal.innerHTML = '<div class="modal-dialog modal-lg">' +
+                '<div class="modal-content">' +
+                '<div class="modal-header"><h5 class="modal-title">Raw Event Data</h5>' +
+                '<button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>' +
+                '<div class="modal-body"><pre class="mb-0" style="max-height:70vh;overflow:auto;font-size:0.85rem">' +
+                escapeHtml(json) + '</pre></div>' +
+                '<div class="modal-footer"><button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button></div>' +
+                '</div></div>';
+            document.body.appendChild(modal);
+            var bsModal = new bootstrap.Modal(modal);
+            bsModal.show();
+            modal.addEventListener('hidden.bs.modal', function () { modal.remove(); });
+        });
+    }
+
     // ── Tab show → adjust columns ───────────────────────────────
     document.querySelectorAll('[data-bs-toggle="tab"]').forEach(function (tab) {
         tab.addEventListener('shown.bs.tab', function () {
@@ -246,8 +327,12 @@ document.addEventListener('DOMContentLoaded', function () {
             // Reload all initialized tables with cache bust, keep current page
             Object.keys(tables).forEach(function (key) {
                 var t = tables[key];
-                var baseUrl = '/api/dt/case/' + CASE_ID + '/' + key;
-                t.ajax.url(baseUrl + '?refresh=1').load(null, false);
+                if (key === 'shadowserver') {
+                    t.ajax.url('/api/dt/case/' + CASE_ID + '/shadowserver?refresh=1').load(null, false);
+                } else {
+                    var baseUrl = '/api/dt/case/' + CASE_ID + '/' + key;
+                    t.ajax.url(baseUrl + '?refresh=1').load(null, false);
+                }
             });
             lastRefresh = new Date();
         }, refreshInterval * 1000);
