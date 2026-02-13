@@ -223,3 +223,76 @@ def case_api(case_id):
 @bp.route("/health")
 def health():
     return jsonify({"status": "ok"})
+
+
+# ── Shadowserver routes ──────────────────────────────────────────
+
+@bp.route("/shadowserver")
+def shadowserver():
+    if not current_app.config.get("SS_ENABLED"):
+        return render_template("error.html", error="Shadowserver integration is not enabled"), 404
+    return render_template("shadowserver.html")
+
+
+@bp.route("/api/dt/shadowserver")
+def datatable_shadowserver():
+    """True server-side DataTables endpoint — SQL LIMIT/OFFSET pagination."""
+    if not current_app.config.get("SS_ENABLED"):
+        return jsonify({"error": "Shadowserver not enabled"}), 404
+
+    from . import shadowserver_db as ss_db
+
+    draw = request.args.get("draw", 1, type=int)
+    start = request.args.get("start", 0, type=int)
+    length = request.args.get("length", 25, type=int)
+    search_value = request.args.get("search[value]", "").strip()
+    report_type = request.args.get("report_type", "").strip() or None
+    date_from = request.args.get("date_from", "").strip() or None
+    date_to = request.args.get("date_to", "").strip() or None
+    order_column = request.args.get("order_column", "report_date")
+    order_dir = request.args.get("order_dir", "desc")
+
+    try:
+        return jsonify(ss_db.query_events(
+            draw=draw, start=start, length=length,
+            search_value=search_value, report_type=report_type,
+            date_from=date_from, date_to=date_to,
+            order_column=order_column, order_dir=order_dir,
+        ))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/shadowserver/stats")
+def shadowserver_stats():
+    if not current_app.config.get("SS_ENABLED"):
+        return jsonify({"error": "Shadowserver not enabled"}), 404
+
+    from . import shadowserver_db as ss_db
+
+    try:
+        stats = ss_db.get_stats()
+        # Serialize dates for JSON
+        for key in ("earliest_date", "latest_date"):
+            if stats.get(key):
+                stats[key] = str(stats[key])
+        for run in stats.get("recent_runs", []):
+            for k in ("run_started", "run_finished"):
+                if run.get(k):
+                    run[k] = run[k].isoformat()
+        return jsonify(stats)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/shadowserver/report-types")
+def shadowserver_report_types():
+    if not current_app.config.get("SS_ENABLED"):
+        return jsonify({"error": "Shadowserver not enabled"}), 404
+
+    from . import shadowserver_db as ss_db
+
+    try:
+        return jsonify(ss_db.get_report_types())
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

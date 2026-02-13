@@ -16,6 +16,9 @@
                 <span class="brand-icon">&#x1f50d;</span> IRIS Data Explorer
             </a>
             <div class="d-flex align-items-center gap-3">
+                {% if config.SS_ENABLED %}
+                <a href="/shadowserver" class="btn btn-sm btn-outline-warning{% if request.path == '/shadowserver' %} active{% endif %}">Shadowserver</a>
+                {% endif %}
                 {% block nav_extra %}{% endblock %}
                 <button id="theme-toggle" class="btn btn-sm btn-outline-secondary" title="Toggle theme">
                     <span id="theme-icon">&#9728;</span>
