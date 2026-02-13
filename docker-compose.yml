@@ -1,6 +1,7 @@
 services:
   iris-data-explorer:
     build: .
+    image: iris-data-explorer:latest
     container_name: iris-data-explorer
     restart: unless-stopped
     ports:
