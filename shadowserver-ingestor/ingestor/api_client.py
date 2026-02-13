@@ -54,26 +54,32 @@ class ShadowserverClient:
         result = self._call("reports/list", {"date": date_str})
         return result if isinstance(result, list) else []
 
-    def query_report(self, date_str, report_type, page=0):
-        """Fetch one page of events for a report type + date."""
+    def query_report(self, date_str, report_type, page=1):
+        """Fetch one page of events for a report type + date.
+
+        Uses reports/query with 'query' dict per Shadowserver API spec.
+        Max limit per page is 1000.
+        """
+        limit = min(self.page_size, 1000)
         result = self._call("reports/query", {
             "date": date_str,
-            "type": report_type,
+            "query": {"type": report_type},
             "page": page,
-            "limit": self.page_size,
+            "limit": limit,
         })
         return result if isinstance(result, list) else []
 
     def fetch_all_events(self, date_str, report_type):
         """Fetch all pages for a report. Yields batches (lists) of events."""
-        page = 0
+        page = 1  # Shadowserver API pages start at 1
+        limit = min(self.page_size, 1000)
         while True:
             log.info("  Fetching %s/%s page %d...", date_str, report_type, page)
             events = self.query_report(date_str, report_type, page=page)
             if not events:
                 break
             yield events
-            if len(events) < self.page_size:
+            if len(events) < limit:
                 break
             page += 1
             time.sleep(self.request_delay)

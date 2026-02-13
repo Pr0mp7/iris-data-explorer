@@ -18,7 +18,7 @@ class Config:
     INGEST_INTERVAL_MINUTES = int(os.environ.get("INGEST_INTERVAL_MINUTES", "15"))
     BACKFILL_DAYS = int(os.environ.get("BACKFILL_DAYS", "7"))
     REQUEST_DELAY_SECONDS = float(os.environ.get("REQUEST_DELAY_SECONDS", "1.0"))
-    PAGE_SIZE = int(os.environ.get("PAGE_SIZE", "10000"))
+    PAGE_SIZE = int(os.environ.get("PAGE_SIZE", "1000"))
 
     # Health endpoint
     HEALTH_PORT = int(os.environ.get("HEALTH_PORT", "8088"))

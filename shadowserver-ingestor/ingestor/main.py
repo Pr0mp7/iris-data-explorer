@@ -39,11 +39,16 @@ def ingest_date(client, date_str):
         log.info("No reports available for %s", date_str)
         return 0, 0, 0
 
-    log.info("Found %d report types for %s", len(report_types), date_str)
+    # reports/list returns dicts with 'type', 'id', 'file', etc.
+    # Extract unique type strings for querying
+    type_names = sorted(set(
+        r["type"] for r in report_types if isinstance(r, dict) and "type" in r
+    ))
+    log.info("Found %d unique report types for %s", len(type_names), date_str)
     total_inserted = 0
     total_skipped = 0
 
-    for report_type in report_types:
+    for report_type in type_names:
         try:
             report_inserted = 0
             report_skipped = 0
@@ -63,7 +68,7 @@ def ingest_date(client, date_str):
 
         time.sleep(Config.REQUEST_DELAY_SECONDS)
 
-    return total_inserted, total_skipped, len(report_types)
+    return total_inserted, total_skipped, len(type_names)
 
 
 def run_ingestion():
