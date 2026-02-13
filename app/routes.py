@@ -8,8 +8,11 @@ from flask import (
 )
 
 from .auth import require_auth, validate_key_against_iris, get_api_key
+from . import limiter
 
+import hashlib
 import logging
+import secrets
 
 log = logging.getLogger(__name__)
 
@@ -38,6 +41,7 @@ def _get_data_source():
 # ── Auth routes ──────────────────────────────────────────────────
 
 @bp.route("/login", methods=["GET", "POST"])
+@limiter.limit("10 per minute")
 def login():
     # If env key is set (service mode), skip login
     if current_app.config["IRIS_API_KEY"]:
@@ -45,21 +49,31 @@ def login():
 
     error = None
     if request.method == "POST":
-        api_key = request.form.get("api_key", "").strip()
-        if not api_key:
-            error = "API key is required"
+        # CSRF check
+        token = request.form.get("csrf_token", "")
+        if not token or token != session.get("csrf_token"):
+            error = "Invalid form submission — please try again"
         else:
-            valid, msg = validate_key_against_iris(api_key)
-            if valid:
-                session["api_key"] = api_key
-                next_url = request.args.get("next", "")
-                if not next_url or not _is_safe_redirect(next_url):
-                    next_url = url_for("main.index")
-                return redirect(next_url)
+            api_key = request.form.get("api_key", "").strip()
+            if not api_key:
+                error = "API key is required"
             else:
-                error = msg or "Invalid API key"
+                valid, msg = validate_key_against_iris(api_key)
+                if valid:
+                    session["api_key"] = api_key
+                    next_url = request.args.get("next", "")
+                    if not next_url or not _is_safe_redirect(next_url):
+                        next_url = url_for("main.index")
+                    return redirect(next_url)
+                else:
+                    error = msg or "Invalid API key"
+
+    # Generate CSRF token for the form
+    if "csrf_token" not in session:
+        session["csrf_token"] = secrets.token_hex(32)
 
     return render_template("login.html", error=error,
+                           csrf_token=session["csrf_token"],
                            iris_url=current_app.config["IRIS_EXTERNAL_URL"])
 
 

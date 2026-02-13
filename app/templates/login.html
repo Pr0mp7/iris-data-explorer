@@ -17,6 +17,7 @@
                 {% endif %}
 
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <div class="mb-3">
                         <label for="api_key" class="form-label">IRIS API Key</label>
                         <input type="password" class="form-control" id="api_key"

@@ -1,9 +1,13 @@
 import os
 import secrets
+from datetime import timedelta
 
 
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", secrets.token_hex(32))
+    PERMANENT_SESSION_LIFETIME = timedelta(
+        hours=int(os.environ.get("SESSION_TIMEOUT_HOURS", "8"))
+    )
 
     IRIS_URL = os.environ.get("IRIS_URL", "https://localhost:4443")
     # Browser-facing IRIS URL for deep links. Defaults to IRIS_URL if not set.
