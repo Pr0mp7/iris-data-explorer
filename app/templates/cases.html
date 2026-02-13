@@ -21,7 +21,7 @@
         <tr>
             <td>{{ cid }}</td>
             <td>{{ c.case_name if c.case_name is defined else c.get('case_name', c.get('name', '')) }}</td>
-            <td>{{ (c.case_description if c.case_description is defined else c.get('case_description', c.get('description', '')))[:120] }}</td>
+            <td>{{ (c.case_description if c.case_description is defined else c.get('case_description', c.get('description', ''))) | strip_tags | truncate(120) }}</td>
             <td>{{ c.case_soc_id if c.case_soc_id is defined else c.get('case_soc_id', c.get('soc_id', '')) }}</td>
             <td>{{ c.case_open_date if c.case_open_date is defined else c.get('case_open_date', c.get('open_date', '')) }}</td>
             <td>{{ c.case_close_date if c.case_close_date is defined else c.get('case_close_date', c.get('close_date', '')) }}</td>

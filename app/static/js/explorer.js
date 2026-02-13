@@ -27,6 +27,11 @@ document.addEventListener('DOMContentLoaded', function () {
         return div.innerHTML;
     }
 
+    function stripHtml(s) {
+        if (!s) return '';
+        return String(s).replace(/<[^>]+>|<!--.*?-->/gs, '').trim();
+    }
+
     function truncate(s, len) {
         if (!s) return '';
         s = String(s);
@@ -99,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function () {
         { data: 'asset_domain', render: function (d) { return copyBtn(d); } },
         { data: 'asset_type_id' },
         { data: 'asset_compromise_status_id' },
-        { data: 'asset_description', render: function (d) { return escapeHtml(truncate(d, 200)); } },
+        { data: 'asset_description', render: function (d) { return escapeHtml(truncate(stripHtml(d), 200)); } },
         { data: 'date_added' }
     ]);
 
@@ -112,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function () {
         { data: 'ioc_type_id' },
         { data: 'ioc_tlp_id' },
         { data: 'ioc_tags', render: function (d) { return escapeHtml(d); } },
-        { data: 'ioc_description', render: function (d) { return escapeHtml(truncate(d, 200)); } }
+        { data: 'ioc_description', render: function (d) { return escapeHtml(truncate(stripHtml(d), 200)); } }
     ]);
 
     // Events
@@ -124,7 +129,7 @@ document.addEventListener('DOMContentLoaded', function () {
         { data: 'event_title', render: function (d) { return escapeHtml(d); } },
         { data: 'event_source', render: function (d) { return escapeHtml(d); } },
         { data: 'event_tags', render: function (d) { return escapeHtml(d); } },
-        { data: 'event_content', render: function (d) { return escapeHtml(truncate(d, 200)); } }
+        { data: 'event_content', render: function (d) { return escapeHtml(truncate(stripHtml(d), 200)); } }
     ]);
 
     // Tasks
@@ -138,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function () {
         { data: 'task_tags', defaultContent: '', render: function (d) { return escapeHtml(d); } },
         { data: 'task_open_date', defaultContent: '' },
         { data: 'task_close_date', defaultContent: '' },
-        { data: 'task_description', defaultContent: '', render: function (d) { return escapeHtml(truncate(d, 200)); } }
+        { data: 'task_description', defaultContent: '', render: function (d) { return escapeHtml(truncate(stripHtml(d), 200)); } }
     ]);
 
     // Notes
@@ -149,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function () {
         { data: 'note_title', render: function (d) { return escapeHtml(d); } },
         { data: 'note_creationdate', defaultContent: '' },
         { data: 'note_lastupdate', defaultContent: '' },
-        { data: 'note_content', defaultContent: '', render: function (d) { return escapeHtml(truncate(d, 300)); } }
+        { data: 'note_content', defaultContent: '', render: function (d) { return escapeHtml(truncate(stripHtml(d), 300)); } }
     ]);
 
     // Evidences
@@ -162,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function () {
         { data: 'file_hash', defaultContent: '', render: function (d) { return copyBtn(d); } },
         { data: 'file_size', defaultContent: '' },
         { data: 'date_added', defaultContent: '' },
-        { data: 'file_description', defaultContent: '', render: function (d) { return escapeHtml(truncate(d, 200)); } }
+        { data: 'file_description', defaultContent: '', render: function (d) { return escapeHtml(truncate(stripHtml(d), 200)); } }
     ]);
 
     // ── Tab show → adjust columns + lazy-load ───────────────────

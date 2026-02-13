@@ -21,7 +21,7 @@
                 {{ cs.case_name if cs.case_name is defined else cs.get('case_name', cs.get('name', 'Unknown')) }}
             </h4>
             <p class="text-body-secondary mb-0">
-                {{ cs.case_description if cs.case_description is defined else cs.get('case_description', cs.get('description', '')) }}
+                {{ (cs.case_description if cs.case_description is defined else cs.get('case_description', cs.get('description', ''))) | strip_tags | truncate(300) }}
             </p>
         </div>
         <div class="text-end text-nowrap">
