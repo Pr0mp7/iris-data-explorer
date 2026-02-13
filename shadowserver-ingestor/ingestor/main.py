@@ -1,6 +1,7 @@
 """Shadowserver Ingestor — entry point with APScheduler and health endpoint."""
 
 import argparse
+import json
 import logging
 import sys
 import time
@@ -27,48 +28,36 @@ _last_run_status = {"status": "starting", "time": None}
 
 
 def ingest_date(client, date_str):
-    """Ingest all reports for a single date. Returns (total_inserted, total_skipped, report_count)."""
+    """Ingest all reports for a single date.
+
+    Downloads each report CSV and upserts events into PostgreSQL.
+    Returns (total_inserted, total_skipped, report_count).
+    """
     log.info("Listing reports for %s...", date_str)
-    try:
-        report_types = client.list_reports(date_str)
-    except Exception as e:
-        log.error("Failed to list reports for %s: %s", date_str, e)
-        return 0, 0, 0
-
-    if not report_types:
-        log.info("No reports available for %s", date_str)
-        return 0, 0, 0
-
-    # reports/list returns dicts with 'type', 'id', 'file', etc.
-    # Extract unique type strings for querying
-    type_names = sorted(set(
-        r["type"] for r in report_types if isinstance(r, dict) and "type" in r
-    ))
-    log.info("Found %d unique report types for %s", len(type_names), date_str)
     total_inserted = 0
     total_skipped = 0
+    report_count = 0
 
-    for report_type in type_names:
-        try:
-            report_inserted = 0
-            report_skipped = 0
-            for batch in client.fetch_all_events(date_str, report_type):
-                ins, skip = db.upsert_events(report_type, date_str, batch)
-                report_inserted += ins
-                report_skipped += skip
+    try:
+        for report_meta, events in client.fetch_all_reports(date_str):
+            report_type = report_meta.get("type", "unknown")
+            report_count += 1
 
-            db.upsert_report(report_type, date_str, report_inserted)
-            total_inserted += report_inserted
-            total_skipped += report_skipped
-            log.info("  %s/%s: %d inserted, %d skipped",
-                     date_str, report_type, report_inserted, report_skipped)
-        except Exception as e:
-            log.error("  Error processing %s/%s: %s", date_str, report_type, e)
-            continue
+            if not events:
+                log.info("  %s/%s: empty report", date_str, report_meta.get("file", "?"))
+                continue
 
-        time.sleep(Config.REQUEST_DELAY_SECONDS)
+            ins, skip = db.upsert_events(report_type, date_str, events)
+            db.upsert_report(report_type, date_str, ins)
+            total_inserted += ins
+            total_skipped += skip
+            log.info("  %s/%s: %d inserted, %d skipped (%d rows)",
+                     date_str, report_type, ins, skip, len(events))
 
-    return total_inserted, total_skipped, len(type_names)
+    except Exception as e:
+        log.error("Failed to process reports for %s: %s", date_str, e)
+
+    return total_inserted, total_skipped, report_count
 
 
 def run_ingestion():
@@ -133,7 +122,6 @@ class HealthHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.end_headers()
-        import json
         self.wfile.write(json.dumps(_last_run_status).encode())
 
     def log_message(self, format, *args):
