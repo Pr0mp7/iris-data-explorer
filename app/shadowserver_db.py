@@ -58,7 +58,8 @@ def get_report_types():
 
 def query_events_by_indicators(draw, start, length, ips=None, hostnames=None,
                                asns=None, search_value="",
-                               order_column="report_date", order_dir="desc"):
+                               order_column="report_date", order_dir="desc",
+                               column_filters=None):
     """Query ss_events matching case indicators (IPs, hostnames, ASNs).
 
     True server-side pagination via SQL LIMIT/OFFSET.
@@ -107,6 +108,11 @@ def query_events_by_indicators(draw, start, length, ips=None, hostnames=None,
                 like = f"%{search_value}%"
                 extra_params = [like] * 6
 
+            cf_conds, cf_params = _build_column_filter_conditions(column_filters)
+            if cf_conds:
+                extra_conditions += " AND " + " AND ".join(cf_conds)
+                extra_params.extend(cf_params)
+
             where = f"WHERE {indicator_where} {extra_conditions}"
             count_params = params + extra_params
 
@@ -145,6 +151,29 @@ def query_events_by_indicators(draw, start, length, ips=None, hostnames=None,
         conn.close()
 
 
+_FILTERABLE_COLUMNS = {
+    "report_date", "report_type", "ip", "port", "asn",
+    "geo", "hostname", "tag", "severity",
+}
+
+
+def _build_column_filter_conditions(column_filters):
+    """Build SQL WHERE conditions from per-column filter dict."""
+    conditions = []
+    params = []
+    for col, val in (column_filters or {}).items():
+        if not val or col not in _FILTERABLE_COLUMNS:
+            continue
+        if col == "ip":
+            conditions.append("ip::TEXT ILIKE %s")
+        elif col in ("port", "asn"):
+            conditions.append(f"{col}::TEXT ILIKE %s")
+        else:
+            conditions.append(f"{col} ILIKE %s")
+        params.append(f"%{val}%")
+    return conditions, params
+
+
 def _serialize_rows(raw_rows):
     """Convert psycopg2 rows to JSON-safe dicts."""
     rows = []
@@ -161,7 +190,8 @@ def _serialize_rows(raw_rows):
 
 def query_events(draw, start, length, search_value="",
                  report_type=None, date_from=None, date_to=None,
-                 order_column="report_date", order_dir="desc"):
+                 order_column="report_date", order_dir="desc",
+                 column_filters=None):
     """True server-side paginated query — SQL LIMIT/OFFSET, not in-memory.
 
     Returns DataTables-compatible dict: {draw, recordsTotal, recordsFiltered, data}.
@@ -195,6 +225,10 @@ def query_events(draw, start, length, search_value="",
                 )""")
                 like = f"%{search_value}%"
                 params.extend([like] * 6)
+
+            cf_conds, cf_params = _build_column_filter_conditions(column_filters)
+            conditions.extend(cf_conds)
+            params.extend(cf_params)
 
             where = ""
             if conditions:

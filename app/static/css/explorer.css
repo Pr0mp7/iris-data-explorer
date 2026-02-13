@@ -62,6 +62,29 @@ td {
     color: var(--bs-primary);
 }
 
+/* Column filter inputs */
+.dt-column-filters th {
+    padding: 4px 6px !important;
+    background: var(--bs-tertiary-bg);
+}
+
+.col-filter-input {
+    font-size: 0.78rem !important;
+    padding: 2px 6px !important;
+    height: auto !important;
+    min-width: 50px;
+}
+
+[data-bs-theme="dark"] .col-filter-input {
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    border-color: var(--bs-border-color);
+}
+
+.col-filter-input:focus {
+    box-shadow: 0 0 0 0.15rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
 /* Processing overlay */
 .dataTables_processing {
     background: var(--bs-body-bg) !important;

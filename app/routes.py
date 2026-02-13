@@ -111,6 +111,7 @@ def datatable_cases():
                     break
         all_data = filtered
 
+    all_data = _apply_column_filters(all_data, request.args)
     records_filtered = len(all_data)
 
     order_col_idx = request.args.get("order[0][column]", None, type=int)
@@ -160,7 +161,7 @@ def datatable_entity(case_id, entity):
 
     records_total = len(all_data)
 
-    # Filter
+    # Filter — global search
     if search_value:
         filtered = []
         for row in all_data:
@@ -170,12 +171,13 @@ def datatable_entity(case_id, entity):
                     break
         all_data = filtered
 
+    # Filter — per-column search
+    all_data = _apply_column_filters(all_data, request.args)
     records_filtered = len(all_data)
 
     # Sort
     order_col_idx = request.args.get("order[0][column]", None, type=int)
     order_dir = request.args.get("order[0][dir]", "asc")
-    columns_param = request.args.get("columns", "")
 
     if order_col_idx is not None:
         # Get column name from columns[N][data] parameter
@@ -203,6 +205,39 @@ def _sort_key(val):
     if val is None:
         return ""
     return str(val).lower()
+
+
+def _extract_column_filters(args):
+    """Extract per-column search values from DataTables columns[N] params."""
+    filters = {}
+    idx = 0
+    while True:
+        col_data = args.get(f"columns[{idx}][data]")
+        if col_data is None:
+            break
+        search_val = args.get(f"columns[{idx}][search][value]", "").strip()
+        if search_val:
+            filters[col_data] = search_val
+        idx += 1
+    return filters
+
+
+def _apply_column_filters(data, args):
+    """Apply per-column search filters from DataTables columns[N][search][value] params."""
+    col_idx = 0
+    while True:
+        col_data = args.get(f"columns[{col_idx}][data]")
+        if col_data is None:
+            break
+        search_val = args.get(f"columns[{col_idx}][search][value]", "").strip().lower()
+        if search_val:
+            data = [
+                row for row in data
+                if row.get(col_data) is not None
+                and search_val in str(row[col_data]).lower()
+            ]
+        col_idx += 1
+    return data
 
 
 # ── JSON API (full dump, kept for programmatic access) ───────────
@@ -252,12 +287,15 @@ def datatable_shadowserver():
     order_column = request.args.get("order_column", "report_date")
     order_dir = request.args.get("order_dir", "desc")
 
+    column_filters = _extract_column_filters(request.args)
+
     try:
         return jsonify(ss_db.query_events(
             draw=draw, start=start, length=length,
             search_value=search_value, report_type=report_type,
             date_from=date_from, date_to=date_to,
             order_column=order_column, order_dir=order_dir,
+            column_filters=column_filters,
         ))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -317,12 +355,15 @@ def datatable_case_shadowserver(case_id):
     order_column = request.args.get("order_column", "report_date")
     order_dir = request.args.get("order_dir", "desc")
 
+    column_filters = _extract_column_filters(request.args)
+
     try:
         return jsonify(ss_db.query_events_by_indicators(
             draw=draw, start=start, length=length,
             ips=list(ips), hostnames=list(hostnames), asns=list(asns),
             search_value=search_value,
             order_column=order_column, order_dir=order_dir,
+            column_filters=column_filters,
         ))
     except Exception as e:
         return jsonify({"error": str(e)}), 500

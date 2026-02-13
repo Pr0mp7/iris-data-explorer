@@ -52,6 +52,45 @@ document.addEventListener('DOMContentLoaded', function () {
                'class="text-decoration-none">' + escapeHtml(text) + '</a>';
     }
 
+    // ── Column filters ───────────────────────────────────────────
+    function addColumnFilters(dt) {
+        var headerRow = $(dt.table().header()).find('tr');
+        var filterRow = $('<tr class="dt-column-filters"></tr>');
+
+        dt.columns().every(function (idx) {
+            var col = this;
+            var th = $(headerRow.find('th').eq(idx));
+            var td = $('<th></th>');
+
+            // Skip non-searchable columns (like "Details" / action buttons)
+            if (col.dataSrc() === 'raw_data' || th.text() === 'Actions' || th.text() === '') {
+                filterRow.append(td);
+                return;
+            }
+
+            var input = $('<input type="text" class="form-control form-control-sm col-filter-input" placeholder="' + th.text() + '...">')
+            td.append(input);
+            filterRow.append(td);
+
+            // Debounce search to avoid too many redraws
+            var timer;
+            input.on('keyup change clear', function () {
+                var val = this.value;
+                clearTimeout(timer);
+                timer = setTimeout(function () {
+                    if (col.search() !== val) {
+                        col.search(val).draw();
+                    }
+                }, 300);
+            });
+
+            // Prevent sorting when clicking on the filter input
+            input.on('click', function (e) { e.stopPropagation(); });
+        });
+
+        headerRow.after(filterRow);
+    }
+
     function copyBtn(text) {
         if (!text) return '';
         var escaped = escapeHtml(String(text));
@@ -104,6 +143,7 @@ document.addEventListener('DOMContentLoaded', function () {
             buttons: ['csv'],
             autoWidth: false,
             order: [[0, 'desc']],
+            initComplete: function () { addColumnFilters(this.api()); },
             ajax: {
                 url: '/api/dt/cases',
                 dataSrc: 'data'
@@ -152,6 +192,9 @@ document.addEventListener('DOMContentLoaded', function () {
             emptyTable: 'No data available',
             search: 'Filter:',
             processing: '<div class="spinner-border spinner-border-sm" role="status"></div> Loading...'
+        },
+        initComplete: function () {
+            addColumnFilters(this.api());
         }
     };
 
@@ -289,6 +332,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     badge.textContent = json.recordsTotal.toLocaleString();
                     badge.style.display = 'inline';
                 }
+                addColumnFilters(this.api());
             }
         }));
 
