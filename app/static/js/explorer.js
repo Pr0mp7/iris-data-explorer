@@ -4,17 +4,26 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Theme toggle ────────────────────────────────────────────
     var themeBtn = document.getElementById('theme-toggle');
     var themeIcon = document.getElementById('theme-icon');
+
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-bs-theme', theme);
+        if (themeIcon) themeIcon.textContent = theme === 'dark' ? '\u2600' : '\u263E';
+        // Swap logos
+        var darkLogos = document.querySelectorAll('.brand-logo-dark');
+        var lightLogos = document.querySelectorAll('.brand-logo-light');
+        darkLogos.forEach(function (el) { el.style.display = theme === 'dark' ? '' : 'none'; });
+        lightLogos.forEach(function (el) { el.style.display = theme === 'light' ? '' : 'none'; });
+    }
+
     if (themeBtn) {
         var saved = localStorage.getItem('ide-theme') || 'dark';
-        document.documentElement.setAttribute('data-bs-theme', saved);
-        themeIcon.textContent = saved === 'dark' ? '\u2600' : '\u263E';
+        applyTheme(saved);
 
         themeBtn.addEventListener('click', function () {
             var current = document.documentElement.getAttribute('data-bs-theme');
             var next = current === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-bs-theme', next);
+            applyTheme(next);
             localStorage.setItem('ide-theme', next);
-            themeIcon.textContent = next === 'dark' ? '\u2600' : '\u263E';
         });
     }
 

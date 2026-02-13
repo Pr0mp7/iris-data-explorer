@@ -4,29 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}IRIS Data Explorer{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/datatables.bootstrap5.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/buttons.bootstrap5.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/explorer.css') }}">
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/iris_logo.png') }}">
+    <link rel="icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg border-bottom">
-        <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center" href="/">
-                <img src="{{ url_for('static', filename='img/iris_logo.png') }}" alt="IRIS" height="28" class="me-2 brand-logo">
-                Data Explorer
+    <nav class="navbar navbar-iris">
+        <div class="container-fluid d-flex align-items-center justify-content-between">
+            <a class="navbar-brand" href="/">
+                <img src="{{ url_for('static', filename='img/logo-white.png') }}" alt="IRIS" class="brand-logo brand-logo-dark">
+                <img src="{{ url_for('static', filename='img/logo-full-blue.png') }}" alt="IRIS" class="brand-logo brand-logo-light" style="display:none; filter: brightness(0) invert(1);">
+                <span class="brand-divider"></span>
+                <span class="brand-text">Data Explorer</span>
             </a>
-            <div class="d-flex align-items-center gap-3">
+            <div class="nav-actions d-flex align-items-center gap-2">
                 {% if config.SS_ENABLED %}
-                <a href="/shadowserver" class="btn btn-sm btn-outline-warning{% if request.path == '/shadowserver' %} active{% endif %}">Shadowserver</a>
+                <a href="/shadowserver" class="btn btn-sm btn-nav-warning{% if request.path == '/shadowserver' %} active{% endif %}">Shadowserver</a>
                 {% endif %}
                 {% block nav_extra %}{% endblock %}
-                <button id="theme-toggle" class="btn btn-sm btn-outline-secondary" title="Toggle theme">
+                <button id="theme-toggle" class="btn btn-sm btn-nav-ghost" title="Toggle theme">
                     <span id="theme-icon">&#9728;</span>
                 </button>
                 {% if session.get('api_key') %}
-                <a href="/logout" class="btn btn-sm btn-outline-danger" title="Logout">Logout</a>
+                <a href="/logout" class="btn btn-sm btn-nav-danger" title="Logout">Logout</a>
                 {% endif %}
             </div>
         </div>
