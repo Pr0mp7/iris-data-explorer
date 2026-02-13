@@ -75,7 +75,70 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // ── Server-side DataTables ──────────────────────────────────
+    // ── Auto-refresh status ─────────────────────────────────────
+    var refreshInterval = (typeof REFRESH_INTERVAL !== 'undefined') ? REFRESH_INTERVAL : 0;
+    var statusEl = document.getElementById('refresh-status');
+    var lastRefresh = new Date();
+
+    function updateStatus() {
+        if (!statusEl || !refreshInterval) return;
+        var ago = Math.round((new Date() - lastRefresh) / 1000);
+        var next = Math.max(0, refreshInterval - ago);
+        statusEl.textContent = 'Updated ' + ago + 's ago | Next in ' + next + 's';
+    }
+
+    if (statusEl && refreshInterval) {
+        setInterval(updateStatus, 1000);
+        updateStatus();
+    }
+
+    // ── Cases list page (AJAX DataTable) ────────────────────────
+    var casesTable = document.getElementById('cases-table');
+    if (casesTable && typeof CASE_ID === 'undefined') {
+        var irisUrl = (typeof IRIS_URL !== 'undefined') ? IRIS_URL : '';
+        var dt = new DataTable('#cases-table', {
+            serverSide: true,
+            processing: true,
+            pageLength: 25,
+            dom: 'Bfrtip',
+            buttons: ['csv'],
+            autoWidth: false,
+            order: [[0, 'desc']],
+            ajax: {
+                url: '/api/dt/cases',
+                dataSrc: 'data'
+            },
+            columns: [
+                { data: 'case_id' },
+                { data: 'case_name', render: function (d) { return escapeHtml(d); } },
+                { data: 'case_description', render: function (d) { return escapeHtml(truncate(stripHtml(d), 120)); } },
+                { data: 'case_soc_id', defaultContent: '' },
+                { data: 'open_date', defaultContent: '' },
+                { data: 'close_date', defaultContent: '' },
+                { data: 'case_id', render: function (d) {
+                    return '<a href="/case/' + d + '" class="btn btn-sm btn-primary">Explore</a> ' +
+                           '<a href="' + escapeHtml(irisUrl) + '/case?cid=' + d + '" target="_blank" ' +
+                           'class="btn btn-sm btn-outline-info" title="Open in IRIS">IRIS</a>';
+                }}
+            ],
+            language: {
+                emptyTable: 'No cases found',
+                search: 'Filter:',
+                processing: '<div class="spinner-border spinner-border-sm" role="status"></div> Loading...'
+            }
+        });
+
+        // Auto-refresh cases table
+        if (refreshInterval > 0) {
+            setInterval(function () {
+                dt.ajax.url('/api/dt/cases?refresh=1').load(null, false);
+                lastRefresh = new Date();
+            }, refreshInterval * 1000);
+        }
+        return;
+    }
+
+    // ── Server-side DataTables (case explorer) ──────────────────
     if (typeof CASE_ID === 'undefined') return;
 
     var dtDefaults = {
@@ -170,12 +233,25 @@ document.addEventListener('DOMContentLoaded', function () {
         { data: 'file_description', defaultContent: '', render: function (d) { return escapeHtml(truncate(stripHtml(d), 200)); } }
     ]);
 
-    // ── Tab show → adjust columns + lazy-load ───────────────────
+    // ── Tab show → adjust columns ───────────────────────────────
     document.querySelectorAll('[data-bs-toggle="tab"]').forEach(function (tab) {
         tab.addEventListener('shown.bs.tab', function () {
             $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
         });
     });
+
+    // ── Auto-refresh entity tables ──────────────────────────────
+    if (refreshInterval > 0) {
+        setInterval(function () {
+            // Reload all initialized tables with cache bust, keep current page
+            Object.keys(tables).forEach(function (key) {
+                var t = tables[key];
+                var baseUrl = '/api/dt/case/' + CASE_ID + '/' + key;
+                t.ajax.url(baseUrl + '?refresh=1').load(null, false);
+            });
+            lastRefresh = new Date();
+        }, refreshInterval * 1000);
+    }
 
     function initTable(selector, entity, columns) {
         return new DataTable(selector, $.extend(true, {}, dtDefaults, {

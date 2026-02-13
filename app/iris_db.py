@@ -148,7 +148,7 @@ def get_case_evidences(case_id):
     )
 
 
-def get_entity(case_id, entity):
+def get_entity(case_id, entity, bust_cache=False):
     """Fetch a single entity type for a case."""
     fetchers = {
         "case": get_case_summary,
@@ -178,7 +178,7 @@ def get_case_data(case_id):
     }
 
 
-def get_cases_list():
+def get_cases_list(bust_cache=False):
     """Fetch list of all cases."""
     return _query(
         """

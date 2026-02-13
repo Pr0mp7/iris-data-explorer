@@ -57,13 +57,9 @@ def logout():
 
 @bp.route("/")
 def index():
-    ds = _get_data_source()
-    try:
-        cases = ds.get_cases_list()
-    except Exception as e:
-        return render_template("error.html", error=str(e)), 500
-    return render_template("cases.html", cases=cases,
-                           iris_url=current_app.config["IRIS_EXTERNAL_URL"])
+    return render_template("cases.html",
+                           iris_url=current_app.config["IRIS_EXTERNAL_URL"],
+                           refresh_interval=current_app.config["REFRESH_INTERVAL"])
 
 
 @bp.route("/case/<int:case_id>")
@@ -77,12 +73,61 @@ def case_explorer(case_id):
     except Exception as e:
         return render_template("error.html", error=str(e)), 500
     return render_template("explorer.html", case_id=case_id, case=case_info,
-                           iris_url=current_app.config["IRIS_EXTERNAL_URL"])
+                           iris_url=current_app.config["IRIS_EXTERNAL_URL"],
+                           refresh_interval=current_app.config["REFRESH_INTERVAL"])
 
 
 # ── DataTables server-side AJAX endpoints ────────────────────────
 
 ENTITIES = ("assets", "iocs", "events", "tasks", "notes", "evidences")
+
+
+@bp.route("/api/dt/cases")
+def datatable_cases():
+    """Server-side DataTables endpoint for the cases list."""
+    ds = _get_data_source()
+    bust = request.args.get("refresh") == "1"
+    try:
+        all_data = ds.get_cases_list(bust_cache=bust)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    if not isinstance(all_data, list):
+        all_data = []
+
+    draw = request.args.get("draw", 1, type=int)
+    start = request.args.get("start", 0, type=int)
+    length = request.args.get("length", 25, type=int)
+    search_value = request.args.get("search[value]", "").strip().lower()
+
+    records_total = len(all_data)
+
+    if search_value:
+        filtered = []
+        for row in all_data:
+            for v in row.values():
+                if v is not None and search_value in str(v).lower():
+                    filtered.append(row)
+                    break
+        all_data = filtered
+
+    records_filtered = len(all_data)
+
+    order_col_idx = request.args.get("order[0][column]", None, type=int)
+    order_dir = request.args.get("order[0][dir]", "asc")
+    if order_col_idx is not None:
+        col_name = request.args.get(f"columns[{order_col_idx}][data]", "")
+        if col_name and all_data:
+            all_data.sort(key=lambda r: _sort_key(r.get(col_name)), reverse=(order_dir == "desc"))
+
+    page_data = all_data[start:start + length]
+
+    return jsonify({
+        "draw": draw,
+        "recordsTotal": records_total,
+        "recordsFiltered": records_filtered,
+        "data": page_data,
+    })
 
 
 @bp.route("/api/dt/case/<int:case_id>/<entity>")
@@ -96,8 +141,9 @@ def datatable_entity(case_id, entity):
         return jsonify({"error": "Invalid entity"}), 400
 
     ds = _get_data_source()
+    bust = request.args.get("refresh") == "1"
     try:
-        all_data = ds.get_entity(case_id, entity)
+        all_data = ds.get_entity(case_id, entity, bust_cache=bust)
     except HTTPError as e:
         code = e.response.status_code if e.response is not None else 500
         return jsonify({"error": str(e)}), code

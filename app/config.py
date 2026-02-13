@@ -25,3 +25,6 @@ class Config:
 
     # Data cache TTL in seconds (how long fetched case data is cached)
     CACHE_TTL = int(os.environ.get("CACHE_TTL", "300"))
+
+    # Auto-refresh interval in seconds (0 = disabled)
+    REFRESH_INTERVAL = int(os.environ.get("REFRESH_INTERVAL", "30"))

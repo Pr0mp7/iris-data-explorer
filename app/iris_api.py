@@ -72,13 +72,27 @@ def _get_legacy(path, params=None):
     return result.get("data", result)
 
 
-def _get_entity_cached(case_id, entity):
+def invalidate_cache(api_key, case_id, entity=None):
+    """Remove cached data for a case entity (or all entities for that case)."""
+    key_hash = hashlib.sha256(api_key.encode()).hexdigest()[:12]
+    if entity:
+        _cache.pop(f"{key_hash}:{case_id}:{entity}", None)
+    else:
+        prefix = f"{key_hash}:{case_id}:"
+        for k in list(_cache.keys()):
+            if k.startswith(prefix):
+                del _cache[k]
+
+
+def _get_entity_cached(case_id, entity, bust_cache=False):
     """Fetch and cache a single entity type for a case."""
     api_key = get_api_key()
     ck = _cache_key(api_key, case_id, entity)
-    cached = _get_cached(ck)
-    if cached is not None:
-        return cached
+
+    if not bust_cache:
+        cached = _get_cached(ck)
+        if cached is not None:
+            return cached
 
     fetchers = {
         "case": lambda: _get_case_summary(case_id),
@@ -121,9 +135,9 @@ def get_case_summary(case_id):
     return _get_entity_cached(case_id, "case")
 
 
-def get_entity(case_id, entity):
+def get_entity(case_id, entity, bust_cache=False):
     """Fetch a single entity type for a case (cached)."""
-    return _get_entity_cached(case_id, entity)
+    return _get_entity_cached(case_id, entity, bust_cache=bust_cache)
 
 
 def get_case_data(case_id):
@@ -139,12 +153,13 @@ def get_case_data(case_id):
     }
 
 
-def get_cases_list():
+def get_cases_list(bust_cache=False):
     api_key = get_api_key()
     ck = _cache_key(api_key, "cases_list")
-    cached = _get_cached(ck)
-    if cached is not None:
-        return cached
+    if not bust_cache:
+        cached = _get_cached(ck)
+        if cached is not None:
+            return cached
     data = _collect_paginated("/api/v2/cases")
     _set_cached(ck, data)
     return data

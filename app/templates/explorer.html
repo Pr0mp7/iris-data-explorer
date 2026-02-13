@@ -35,6 +35,10 @@
     </div>
 </div>
 
+<div class="d-flex justify-content-end mb-2">
+    <small id="refresh-status" class="text-body-secondary"></small>
+</div>
+
 {# Tabs #}
 <ul class="nav nav-tabs" id="entityTabs" role="tablist">
     <li class="nav-item">
@@ -117,5 +121,6 @@
 <script>
     var CASE_ID = {{ case_id }};
     var IRIS_URL = {{ iris_url | tojson }};
+    var REFRESH_INTERVAL = {{ refresh_interval }};
 </script>
 {% endblock %}
