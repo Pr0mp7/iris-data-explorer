@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-02-13
+
+### Added
+- Per-column filter inputs on all DataTables (Assets, IOCs, Timeline, Tasks, Notes, Evidence, Shadowserver, cases list)
+- Debounced filter inputs (300ms) with SQL ILIKE support for Shadowserver columns
+- Column filters work alongside existing global search
+
 ## [1.1.0] - 2026-02-13
 
 ### Added
@@ -37,5 +44,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docker deployment with healthcheck
 - Lab deployment with external Docker network support
 
+[1.2.0]: https://github.com/Pr0mp7/iris-data-explorer/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Pr0mp7/iris-data-explorer/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Pr0mp7/iris-data-explorer/releases/tag/v1.0.0
