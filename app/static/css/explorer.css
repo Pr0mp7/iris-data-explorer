@@ -1,7 +1,12 @@
 /* IRIS Data Explorer — Custom styles */
 
-.brand-icon {
-    font-size: 1.3rem;
+/* Navbar brand logo — invert for dark theme */
+.brand-logo {
+    filter: none;
+}
+
+[data-bs-theme="dark"] .brand-logo {
+    filter: invert(1);
 }
 
 .case-header {
