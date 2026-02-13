@@ -6,6 +6,8 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", secrets.token_hex(32))
 
     IRIS_URL = os.environ.get("IRIS_URL", "https://localhost:4443")
+    # Browser-facing IRIS URL for deep links. Defaults to IRIS_URL if not set.
+    IRIS_EXTERNAL_URL = os.environ.get("IRIS_EXTERNAL_URL", "") or os.environ.get("IRIS_URL", "https://localhost:4443")
     IRIS_VERIFY_SSL = os.environ.get("IRIS_VERIFY_SSL", "false").lower() == "true"
     DATA_SOURCE = os.environ.get("DATA_SOURCE", "api")  # "api" or "db"
 

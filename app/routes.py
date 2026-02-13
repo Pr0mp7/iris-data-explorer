@@ -44,7 +44,7 @@ def login():
                 error = msg or "Invalid API key"
 
     return render_template("login.html", error=error,
-                           iris_url=current_app.config["IRIS_URL"])
+                           iris_url=current_app.config["IRIS_EXTERNAL_URL"])
 
 
 @bp.route("/logout")
@@ -63,7 +63,7 @@ def index():
     except Exception as e:
         return render_template("error.html", error=str(e)), 500
     return render_template("cases.html", cases=cases,
-                           iris_url=current_app.config["IRIS_URL"])
+                           iris_url=current_app.config["IRIS_EXTERNAL_URL"])
 
 
 @bp.route("/case/<int:case_id>")
@@ -77,7 +77,7 @@ def case_explorer(case_id):
     except Exception as e:
         return render_template("error.html", error=str(e)), 500
     return render_template("explorer.html", case_id=case_id, case=case_info,
-                           iris_url=current_app.config["IRIS_URL"])
+                           iris_url=current_app.config["IRIS_EXTERNAL_URL"])
 
 
 # ── DataTables server-side AJAX endpoints ────────────────────────

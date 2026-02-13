@@ -12,9 +12,9 @@ def create_app():
 
     @app.after_request
     def set_security_headers(response):
-        iris_url = app.config["IRIS_URL"]
+        iris_ext = app.config["IRIS_EXTERNAL_URL"]
         response.headers["Content-Security-Policy"] = (
-            f"frame-ancestors 'self' {iris_url}"
+            f"frame-ancestors 'self' {iris_ext}"
         )
         response.headers["X-Content-Type-Options"] = "nosniff"
         return response
