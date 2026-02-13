@@ -17,8 +17,7 @@
     <nav class="navbar navbar-iris">
         <div class="container-fluid d-flex align-items-center justify-content-between">
             <a class="navbar-brand" href="/">
-                <img src="{{ url_for('static', filename='img/logo-white.png') }}" alt="IRIS" class="brand-logo brand-logo-dark">
-                <img src="{{ url_for('static', filename='img/logo-full-blue.png') }}" alt="IRIS" class="brand-logo brand-logo-light" style="display:none; filter: brightness(0) invert(1);">
+                <img src="{{ url_for('static', filename='img/logo-white.png') }}" alt="IRIS" class="brand-logo">
                 <span class="brand-divider"></span>
                 <span class="brand-text">Data Explorer</span>
             </a>
@@ -27,7 +26,7 @@
                 <a href="/shadowserver" class="btn btn-sm btn-nav-warning{% if request.path == '/shadowserver' %} active{% endif %}">Shadowserver</a>
                 {% endif %}
                 {% block nav_extra %}{% endblock %}
-                <button id="theme-toggle" class="btn btn-sm btn-nav-ghost" title="Toggle theme">
+                <button id="theme-toggle" class="btn btn-sm btn-nav-ghost" title="Toggle theme" aria-label="Toggle dark/light theme">
                     <span id="theme-icon">&#9728;</span>
                 </button>
                 {% if session.get('api_key') %}
@@ -40,6 +39,10 @@
     <main class="container-fluid py-3">
         {% block content %}{% endblock %}
     </main>
+
+    <footer class="footer-iris">
+        IRIS Data Explorer
+    </footer>
 
     <script src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>

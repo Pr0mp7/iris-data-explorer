@@ -2,11 +2,13 @@
 {% block title %}All Cases — IRIS Data Explorer{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0">All Cases</h4>
-    <small id="refresh-status" class="text-body-secondary"></small>
+<div class="case-header mb-3 p-3 rounded">
+    <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0" style="font-weight: 700;">All Cases</h5>
+        <small id="refresh-status" class="text-iris-muted"></small>
+    </div>
 </div>
-<table id="cases-table" class="table table-striped table-hover" style="width:100%">
+<table id="cases-table" class="table table-hover" style="width:100%">
     <thead>
         <tr>
             <th>ID</th>

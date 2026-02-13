@@ -33,6 +33,34 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    // ── Column filters ───────────────────────────────────────────
+    function addColumnFilters(dt) {
+        var headerRow = $(dt.table().header()).find('tr');
+        var filterRow = $('<tr class="dt-column-filters"></tr>');
+        dt.columns().every(function (idx) {
+            var col = this;
+            var th = $(headerRow.find('th').eq(idx));
+            var td = $('<th></th>');
+            if (col.dataSrc() === 'raw_data' || th.text() === 'Actions' || th.text() === '' || th.text() === 'Details') {
+                filterRow.append(td);
+                return;
+            }
+            var input = $('<input type="text" class="form-control form-control-sm col-filter-input" placeholder="' + th.text() + '...">');
+            td.append(input);
+            filterRow.append(td);
+            var timer;
+            input.on('keyup change clear', function () {
+                var val = this.value;
+                clearTimeout(timer);
+                timer = setTimeout(function () {
+                    if (col.search() !== val) { col.search(val).draw(); }
+                }, 300);
+            });
+            input.on('click', function (e) { e.stopPropagation(); });
+        });
+        headerRow.after(filterRow);
+    }
+
     // ── Load stats + report types ────────────────────────────────
     $.getJSON('/api/shadowserver/stats', function (data) {
         $('#stat-total').text(data.total_events != null ? data.total_events.toLocaleString() : '0');
@@ -110,7 +138,7 @@ document.addEventListener('DOMContentLoaded', function () {
         },
         columns: [
             { data: 'report_date' },
-            { data: 'report_type', render: function (d) { return '<span class="badge bg-info text-dark">' + escapeHtml(d) + '</span>'; } },
+            { data: 'report_type', render: function (d) { return '<span class="badge bg-warning text-dark">' + escapeHtml(d) + '</span>'; } },
             { data: 'ip', render: function (d) { return copyBtn(d); } },
             { data: 'port', defaultContent: '' },
             { data: 'asn', defaultContent: '' },
@@ -136,6 +164,9 @@ document.addEventListener('DOMContentLoaded', function () {
             emptyTable: 'No Shadowserver events found',
             search: 'Search:',
             processing: '<div class="spinner-border spinner-border-sm" role="status"></div> Loading...'
+        },
+        initComplete: function () {
+            addColumnFilters(this.api());
         }
     });
 

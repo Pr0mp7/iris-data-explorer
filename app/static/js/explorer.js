@@ -8,11 +8,6 @@ document.addEventListener('DOMContentLoaded', function () {
     function applyTheme(theme) {
         document.documentElement.setAttribute('data-bs-theme', theme);
         if (themeIcon) themeIcon.textContent = theme === 'dark' ? '\u2600' : '\u263E';
-        // Swap logos
-        var darkLogos = document.querySelectorAll('.brand-logo-dark');
-        var lightLogos = document.querySelectorAll('.brand-logo-light');
-        darkLogos.forEach(function (el) { el.style.display = theme === 'dark' ? '' : 'none'; });
-        lightLogos.forEach(function (el) { el.style.display = theme === 'light' ? '' : 'none'; });
     }
 
     if (themeBtn) {

@@ -291,7 +291,6 @@ a:hover {
 }
 
 .tab-content {
-    min-height: 300px;
     padding-top: 1rem;
 }
 
@@ -358,7 +357,7 @@ table.dataTable tbody td {
     vertical-align: middle;
 }
 
-td {
+table.dataTable td {
     max-width: 400px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -396,8 +395,37 @@ td {
     color: var(--iris-muted);
 }
 
+/* Pagination */
 .dataTables_wrapper .dataTables_paginate .paginate_button {
     font-size: 0.82rem;
+    color: var(--iris-muted) !important;
+    background: transparent !important;
+    border: 1px solid var(--iris-border) !important;
+    border-radius: 4px;
+    margin: 0 2px;
+    padding: 0.25rem 0.6rem;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    color: #ffffff !important;
+    background: var(--iris-primary) !important;
+    border-color: var(--iris-primary) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current,
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    color: #ffffff !important;
+    background: var(--iris-primary) !important;
+    border-color: var(--iris-primary) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
+    color: var(--iris-category) !important;
+    background: transparent !important;
+    border-color: var(--iris-border) !important;
+    opacity: 0.5;
+    cursor: default;
 }
 
 .dataTables_processing {
@@ -683,4 +711,106 @@ td {
 [data-bs-theme="dark"] .dropdown-item:hover {
     background: #1a2035;
     color: #ffffff;
+}
+
+/* ── Focus-visible (accessibility) ────────────────────────── */
+:focus-visible {
+    outline: 2px solid var(--iris-link);
+    outline-offset: 2px;
+}
+
+.btn:focus-visible {
+    box-shadow: 0 0 0 3px rgba(0, 78, 179, 0.35);
+    outline: none;
+}
+
+.nav-tabs .nav-link:focus-visible {
+    box-shadow: 0 0 0 2px var(--iris-link);
+    outline: none;
+}
+
+/* ── Modal close button (dark) ────────────────────────────── */
+[data-bs-theme="dark"] .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* ── Modal pre/code ───────────────────────────────────────── */
+.modal-body pre {
+    background: var(--iris-filter-bg);
+    border: 1px solid var(--iris-border);
+    border-radius: 4px;
+    padding: 1rem;
+    color: var(--iris-body-color);
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+/* ── Login page — light theme ─────────────────────────────── */
+[data-bs-theme="light"] .login-wrapper {
+    background: linear-gradient(135deg, #e8eef5 0%, #c9d6e5 100%);
+}
+
+[data-bs-theme="light"] .login-card {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+[data-bs-theme="light"] .login-card .form-label {
+    color: var(--iris-category);
+}
+
+[data-bs-theme="light"] .login-card .form-control {
+    background: var(--iris-input-bg);
+    border-color: var(--iris-input-border);
+    color: var(--iris-input-color);
+}
+
+[data-bs-theme="light"] .login-card .form-control::placeholder {
+    color: var(--iris-muted);
+}
+
+[data-bs-theme="light"] .login-card .text-muted-iris {
+    color: var(--iris-muted);
+}
+
+[data-bs-theme="light"] .login-card code {
+    color: var(--iris-primary);
+    background: rgba(5, 49, 106, 0.08);
+}
+
+[data-bs-theme="light"] .login-card .text-iris-category {
+    color: var(--iris-category);
+}
+
+[data-bs-theme="light"] .login-card .btn-primary {
+    background: #05316a;
+    border-color: #05316a;
+}
+
+[data-bs-theme="light"] .login-card .btn-primary:hover {
+    background: #042755;
+    border-color: #042755;
+}
+
+[data-bs-theme="light"] .login-card .login-logo {
+    filter: brightness(0);
+    opacity: 0.85;
+}
+
+/* ── Secondary outline button ─────────────────────────────── */
+.btn-outline-iris-secondary {
+    color: var(--iris-muted);
+    border: 1px solid var(--iris-border);
+    background: transparent;
+}
+
+.btn-outline-iris-secondary:hover {
+    color: var(--iris-body-color);
+    border-color: var(--iris-muted);
+    background: var(--iris-filter-bg);
+}
+
+/* ── Tab content height ───────────────────────────────────── */
+.tab-content {
+    min-height: 200px;
 }
