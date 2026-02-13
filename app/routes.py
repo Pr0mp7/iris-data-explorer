@@ -1,4 +1,6 @@
-from flask import Blueprint, render_template, jsonify, current_app, abort
+from requests.exceptions import HTTPError
+
+from flask import Blueprint, render_template, jsonify, current_app
 
 from .auth import validate_api_key
 
@@ -31,6 +33,9 @@ def case_explorer(case_id):
     ds = _get_data_source()
     try:
         data = ds.get_case_data(case_id)
+    except HTTPError as e:
+        code = e.response.status_code if e.response is not None else 500
+        return render_template("error.html", error=str(e)), code
     except Exception as e:
         return render_template("error.html", error=str(e)), 500
     return render_template("explorer.html", case_id=case_id, data=data)
@@ -42,6 +47,9 @@ def case_api(case_id):
     ds = _get_data_source()
     try:
         data = ds.get_case_data(case_id)
+    except HTTPError as e:
+        code = e.response.status_code if e.response is not None else 500
+        return jsonify({"status": "error", "message": str(e)}), code
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
     return jsonify({"status": "success", "data": data})
