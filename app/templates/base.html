@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}IRIS Data Explorer{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/datatables.bootstrap5.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/buttons.bootstrap5.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/explorer.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg border-bottom">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <span class="brand-icon">&#x1f50d;</span> IRIS Data Explorer
+            </a>
+            <div class="d-flex align-items-center gap-3">
+                {% block nav_extra %}{% endblock %}
+                <button id="theme-toggle" class="btn btn-sm btn-outline-secondary" title="Toggle theme">
+                    <span id="theme-icon">&#9728;</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container-fluid py-3">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/datatables.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/datatables.bootstrap5.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/datatables.buttons.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/buttons.html5.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/buttons.bootstrap5.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/explorer.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

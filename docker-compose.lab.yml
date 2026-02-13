@@ -1,0 +1,20 @@
+# Lab deployment — connects to IRIS network
+services:
+  iris-data-explorer:
+    build: .
+    container_name: iris-data-explorer
+    restart: unless-stopped
+    ports:
+      - "${EXPLORER_PORT:-8087}:5000"
+    env_file: .env
+    networks:
+      - iris_frontend
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  iris_frontend:
+    external: true

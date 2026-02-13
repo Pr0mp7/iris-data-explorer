@@ -1,0 +1,58 @@
+/* IRIS Data Explorer — Custom styles */
+
+.brand-icon {
+    font-size: 1.3rem;
+}
+
+.case-header {
+    background: var(--bs-tertiary-bg);
+}
+
+.entity-badge {
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+.entity-badge:hover {
+    transform: scale(1.05);
+}
+
+/* DataTables overrides for dark theme */
+[data-bs-theme="dark"] .dataTables_wrapper .dataTables_filter input,
+[data-bs-theme="dark"] .dataTables_wrapper .dataTables_length select {
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    border-color: var(--bs-border-color);
+}
+
+[data-bs-theme="dark"] table.dataTable tbody tr {
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] table.dataTable tbody tr:hover {
+    background-color: var(--bs-tertiary-bg);
+}
+
+/* Make tables responsive */
+.tab-content .dataTables_wrapper {
+    overflow-x: auto;
+}
+
+/* Tab content minimum height prevents layout jump */
+.tab-content {
+    min-height: 300px;
+}
+
+/* Truncated cells show pointer */
+td {
+    max-width: 400px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* CSV/Copy buttons */
+.dt-buttons .btn {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+}
