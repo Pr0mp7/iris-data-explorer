@@ -125,9 +125,10 @@ document.addEventListener('DOMContentLoaded', function () {
             { data: 'raw_data', orderable: false, render: function (d) {
                 if (!d) return '';
                 var json = JSON.stringify(d, null, 2);
+                var b64 = btoa(unescape(encodeURIComponent(json)));
                 var preview = JSON.stringify(d).substring(0, 60) + '...';
                 return '<button class="btn btn-sm btn-outline-secondary ss-expand" ' +
-                       'data-json="' + escapeHtml(json) + '">Expand</button>' +
+                       'data-json-b64="' + b64 + '">Expand</button>' +
                        '<span class="text-muted small ms-1">' + escapeHtml(preview) + '</span>';
             }}
         ],
@@ -156,7 +157,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var btn = e.target.closest('.ss-expand');
         if (!btn) return;
         e.preventDefault();
-        var json = btn.getAttribute('data-json');
+        var json = decodeURIComponent(escape(atob(btn.getAttribute('data-json-b64'))));
         var modal = document.createElement('div');
         modal.className = 'modal fade';
         modal.innerHTML = '<div class="modal-dialog modal-lg">' +

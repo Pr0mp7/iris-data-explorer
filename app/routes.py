@@ -9,8 +9,22 @@ from flask import (
 
 from .auth import require_auth, validate_key_against_iris, get_api_key
 
+import logging
+
+log = logging.getLogger(__name__)
+
 bp = Blueprint("main", __name__)
 bp.before_request(require_auth)
+
+
+def _is_safe_redirect(target):
+    """Only allow redirects to relative paths on the same host."""
+    if not target:
+        return False
+    # Block absolute URLs (http://, //, javascript:, etc.)
+    if ":" in target.split("/")[0] or target.startswith("//"):
+        return False
+    return target.startswith("/")
 
 
 def _get_data_source():
@@ -38,7 +52,9 @@ def login():
             valid, msg = validate_key_against_iris(api_key)
             if valid:
                 session["api_key"] = api_key
-                next_url = request.args.get("next", url_for("main.index"))
+                next_url = request.args.get("next", "")
+                if not next_url or not _is_safe_redirect(next_url):
+                    next_url = url_for("main.index")
                 return redirect(next_url)
             else:
                 error = msg or "Invalid API key"
@@ -64,14 +80,18 @@ def index():
 
 @bp.route("/case/<int:case_id>")
 def case_explorer(case_id):
+    log.info("Case %s accessed from %s", case_id, request.remote_addr)
     ds = _get_data_source()
     try:
         case_info = ds.get_case_summary(case_id)
     except HTTPError as e:
         code = e.response.status_code if e.response is not None else 500
-        return render_template("error.html", error=str(e)), code
+        log.warning("IRIS API error for case %s: %s", case_id, e)
+        msg = "Case not found" if code == 404 else "Failed to load case"
+        return render_template("error.html", error=msg), code
     except Exception as e:
-        return render_template("error.html", error=str(e)), 500
+        log.exception("Unexpected error loading case %s", case_id)
+        return render_template("error.html", error="Internal error"), 500
     return render_template("explorer.html", case_id=case_id, case=case_info,
                            iris_url=current_app.config["IRIS_EXTERNAL_URL"],
                            refresh_interval=current_app.config["REFRESH_INTERVAL"])
@@ -90,14 +110,15 @@ def datatable_cases():
     try:
         all_data = ds.get_cases_list(bust_cache=bust)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        log.exception("Failed to fetch cases list")
+        return jsonify({"error": "Failed to load cases"}), 500
 
     if not isinstance(all_data, list):
         all_data = []
 
     draw = request.args.get("draw", 1, type=int)
-    start = request.args.get("start", 0, type=int)
-    length = request.args.get("length", 25, type=int)
+    start = max(0, request.args.get("start", 0, type=int))
+    length = min(max(1, request.args.get("length", 25, type=int)), 500)
     search_value = request.args.get("search[value]", "").strip().lower()
 
     records_total = len(all_data)
@@ -147,16 +168,18 @@ def datatable_entity(case_id, entity):
         all_data = ds.get_entity(case_id, entity, bust_cache=bust)
     except HTTPError as e:
         code = e.response.status_code if e.response is not None else 500
-        return jsonify({"error": str(e)}), code
+        log.warning("IRIS API error for case %s entity %s: %s", case_id, entity, e)
+        return jsonify({"error": "Failed to load entity data"}), code
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        log.exception("Unexpected error for case %s entity %s", case_id, entity)
+        return jsonify({"error": "Internal error"}), 500
 
     if not isinstance(all_data, list):
         all_data = []
 
     draw = request.args.get("draw", 1, type=int)
-    start = request.args.get("start", 0, type=int)
-    length = request.args.get("length", 25, type=int)
+    start = max(0, request.args.get("start", 0, type=int))
+    length = min(max(1, request.args.get("length", 25, type=int)), 500)
     search_value = request.args.get("search[value]", "").strip().lower()
 
     records_total = len(all_data)
@@ -249,9 +272,11 @@ def case_api(case_id):
         data = ds.get_case_data(case_id)
     except HTTPError as e:
         code = e.response.status_code if e.response is not None else 500
-        return jsonify({"status": "error", "message": str(e)}), code
+        log.warning("IRIS API error for case %s full data: %s", case_id, e)
+        return jsonify({"status": "error", "message": "Failed to load case data"}), code
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        log.exception("Unexpected error loading case %s data", case_id)
+        return jsonify({"status": "error", "message": "Internal error"}), 500
     return jsonify({"status": "success", "data": data})
 
 
@@ -278,8 +303,8 @@ def datatable_shadowserver():
     from . import shadowserver_db as ss_db
 
     draw = request.args.get("draw", 1, type=int)
-    start = request.args.get("start", 0, type=int)
-    length = request.args.get("length", 25, type=int)
+    start = max(0, request.args.get("start", 0, type=int))
+    length = min(max(1, request.args.get("length", 25, type=int)), 500)
     search_value = request.args.get("search[value]", "").strip()
     report_type = request.args.get("report_type", "").strip() or None
     date_from = request.args.get("date_from", "").strip() or None
@@ -298,7 +323,8 @@ def datatable_shadowserver():
             column_filters=column_filters,
         ))
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        log.exception("Shadowserver query_events error")
+        return jsonify({"error": "Failed to query Shadowserver data"}), 500
 
 
 @bp.route("/api/dt/case/<int:case_id>/shadowserver")
@@ -349,8 +375,8 @@ def datatable_case_shadowserver(case_id):
 
     # 2. Query Shadowserver events matching these indicators
     draw = request.args.get("draw", 1, type=int)
-    start = request.args.get("start", 0, type=int)
-    length = request.args.get("length", 25, type=int)
+    start = max(0, request.args.get("start", 0, type=int))
+    length = min(max(1, request.args.get("length", 25, type=int)), 500)
     search_value = request.args.get("search[value]", "").strip()
     order_column = request.args.get("order_column", "report_date")
     order_dir = request.args.get("order_dir", "desc")
@@ -366,7 +392,8 @@ def datatable_case_shadowserver(case_id):
             column_filters=column_filters,
         ))
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        log.exception("Shadowserver case correlation error for case %s", case_id)
+        return jsonify({"error": "Failed to query Shadowserver data"}), 500
 
 
 def _looks_like_ip(val):
@@ -414,7 +441,8 @@ def shadowserver_stats():
                     run[k] = run[k].isoformat()
         return jsonify(stats)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        log.exception("Shadowserver stats error")
+        return jsonify({"error": "Failed to load stats"}), 500
 
 
 @bp.route("/api/shadowserver/report-types")
@@ -427,4 +455,5 @@ def shadowserver_report_types():
     try:
         return jsonify(ss_db.get_report_types())
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        log.exception("Shadowserver report-types error")
+        return jsonify({"error": "Failed to load report types"}), 500
