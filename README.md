@@ -109,8 +109,8 @@ Browser ──► IRIS Data Explorer (Flask, port 8087)
                 │
                 └──► PostgreSQL: shadowserver_db (read-only, optional)
                           ▲
-                          │ writes
-                Shadowserver Ingestor (standalone container)
+                          │ writes (separate service)
+                shadowserver-ingestor (github.com/Pr0mp7/shadowserver-ingestor)
                           │
                           ▼
                 Shadowserver API (HMAC-SHA256 auth)
@@ -120,18 +120,9 @@ The explorer is a **read-only** service. It never modifies case data.
 
 ## Shadowserver Ingestor
 
-The `shadowserver-ingestor/` directory contains a standalone service that fetches scan reports from the Shadowserver API and writes them to PostgreSQL.
+The Shadowserver data ingestion is handled by a **separate standalone service**: [shadowserver-ingestor](https://github.com/Pr0mp7/shadowserver-ingestor).
 
-See [`shadowserver-ingestor/`](shadowserver-ingestor/) for setup and configuration.
-
-**Key features:**
-- HMAC-SHA256 authenticated API client
-- Fetches all subscribed report types as CSV
-- SHA256-based dedup (no duplicate events)
-- Configurable schedule (default: every 15 minutes)
-- Auto-backfill on first start (default: 7 days)
-- Health endpoint on port 8088
-- Ingestion audit log
+Set it up first to populate the `shadowserver_db`, then enable `SS_ENABLED=true` in this project's `.env`.
 
 ## Deployment
 
@@ -148,20 +139,6 @@ docker compose -f docker-compose.lab.yml up -d
 ```
 
 Connects to `iris_frontend` and `postgres-net` external Docker networks.
-
-### With Shadowserver Ingestor
-
-```bash
-# 1. Start the ingestor (writes to PostgreSQL)
-cd shadowserver-ingestor
-cp .env.example .env  # configure API keys + DB credentials
-docker compose up -d
-
-# 2. Start the explorer (reads from PostgreSQL)
-cd ..
-cp .env.example .env  # set SS_ENABLED=true + DB credentials
-docker compose -f docker-compose.lab.yml up -d
-```
 
 ## License
 
