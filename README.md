@@ -15,6 +15,10 @@
 
 ---
 
+<img width="1465" height="666" alt="grafik" src="https://github.com/user-attachments/assets/cbd6518a-42c1-4077-a9d7-f15275feca22" />
+
+
+---
 ## Features
 
 - **7 entity tabs** — Assets, IOCs, Timeline, Tasks, Notes, Evidence, Shadowserver
