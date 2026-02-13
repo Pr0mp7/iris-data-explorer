@@ -1,42 +1,59 @@
 import psycopg2
 import psycopg2.extras
-from flask import current_app
+import psycopg2.pool
+from flask import current_app, g
 
-_pool = None
+
+def _get_pool():
+    """Get or create a connection pool (stored on the app)."""
+    if not hasattr(current_app, "_iris_db_pool") or current_app._iris_db_pool is None or current_app._iris_db_pool.closed:
+        current_app._iris_db_pool = psycopg2.pool.SimpleConnectionPool(
+            minconn=1,
+            maxconn=5,
+            host=current_app.config["DB_HOST"],
+            port=current_app.config["DB_PORT"],
+            dbname=current_app.config["DB_NAME"],
+            user=current_app.config["DB_USER"],
+            password=current_app.config["DB_PASSWORD"],
+        )
+    return current_app._iris_db_pool
 
 
 def _get_conn():
-    """Get a PostgreSQL connection using app config."""
-    return psycopg2.connect(
-        host=current_app.config["DB_HOST"],
-        port=current_app.config["DB_PORT"],
-        dbname=current_app.config["DB_NAME"],
-        user=current_app.config["DB_USER"],
-        password=current_app.config["DB_PASSWORD"],
-    )
+    """Get a pooled connection, returned automatically at end of request."""
+    if "iris_db_conn" not in g:
+        g.iris_db_conn = _get_pool().getconn()
+    return g.iris_db_conn
+
+
+def _return_conn(response):
+    """Return connection to pool after request."""
+    conn = g.pop("iris_db_conn", None)
+    if conn is not None:
+        _get_pool().putconn(conn)
+    return response
+
+
+def init_app(app):
+    """Register teardown to return connections."""
+    app.after_request(_return_conn)
 
 
 def _query(sql, params=None):
     """Execute a query and return all rows as dicts."""
     conn = _get_conn()
-    try:
-        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(sql, params)
-            return [dict(row) for row in cur.fetchall()]
-    finally:
-        conn.close()
+    with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+        cur.execute(sql, params)
+        return [dict(row) for row in cur.fetchall()]
 
 
 def _query_one(sql, params=None):
     """Execute a query and return a single row as dict."""
     conn = _get_conn()
-    try:
-        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(sql, params)
-            row = cur.fetchone()
-            return dict(row) if row else None
-    finally:
-        conn.close()
+    with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+        cur.execute(sql, params)
+        row = cur.fetchone()
+        return dict(row) if row else None
 
 
 def get_case_summary(case_id):

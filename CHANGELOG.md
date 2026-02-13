@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.2] - 2026-02-13
+
+### Security
+- CSRF token on login form — prevents forged login requests
+- Rate limiting on login endpoint (10/min per IP) via Flask-Limiter
+- Session timeout after 8 hours (configurable via `SESSION_TIMEOUT_HOURS`)
+
+### Changed
+- PostgreSQL connection pooling for both IRIS DB and Shadowserver DB (replaces per-request connections)
+- Bounded LRU cache (max 256 entries) with automatic eviction — prevents unbounded memory growth
+- Pagination safety limit (10,000 items max) on IRIS API fetcher — prevents OOM on huge cases
+- Docker resource limits (1 CPU, 512MB RAM) and log rotation (10MB x 3 files) on both compose files
+
 ## [1.3.1] - 2026-02-13
 
 ### Security
@@ -60,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docker deployment with healthcheck
 - Lab deployment with external Docker network support
 
+[1.3.2]: https://github.com/Pr0mp7/iris-data-explorer/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/Pr0mp7/iris-data-explorer/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/Pr0mp7/iris-data-explorer/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/Pr0mp7/iris-data-explorer/compare/v1.1.0...v1.2.0

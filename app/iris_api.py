@@ -1,13 +1,18 @@
 import hashlib
+import logging
 import time
+from collections import OrderedDict
 
 import requests
 from flask import current_app
 
 from .auth import get_api_key
 
-# In-memory cache: {cache_key: {"data": ..., "expires": timestamp}}
-_cache = {}
+log = logging.getLogger(__name__)
+
+# Bounded LRU cache: max 256 entries, evicts oldest on overflow
+_CACHE_MAX_ENTRIES = 256
+_cache = OrderedDict()
 
 
 def _cache_key(api_key, *parts):
@@ -19,13 +24,21 @@ def _cache_key(api_key, *parts):
 def _get_cached(key):
     entry = _cache.get(key)
     if entry and entry["expires"] > time.time():
+        _cache.move_to_end(key)
         return entry["data"]
+    # Expired — remove it
+    if entry:
+        del _cache[key]
     return None
 
 
 def _set_cached(key, data):
     ttl = current_app.config["CACHE_TTL"]
     _cache[key] = {"data": data, "expires": time.time() + ttl}
+    _cache.move_to_end(key)
+    # Evict oldest entries if over limit
+    while len(_cache) > _CACHE_MAX_ENTRIES:
+        _cache.popitem(last=False)
 
 
 def _get(path, params=None):
@@ -40,6 +53,9 @@ def _get(path, params=None):
     )
     resp.raise_for_status()
     return resp.json()
+
+
+_MAX_PAGINATED_ITEMS = 10_000
 
 
 def _collect_paginated(path):
@@ -60,6 +76,9 @@ def _collect_paginated(path):
         if total is not None and len(all_items) >= total:
             break
         if len(items) < per_page:
+            break
+        if len(all_items) >= _MAX_PAGINATED_ITEMS:
+            log.warning("Pagination limit reached (%d items) for %s", len(all_items), path)
             break
         page += 1
 
