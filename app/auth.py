@@ -1,5 +1,9 @@
+import logging
+
 import requests as http_requests
 from flask import current_app, request, redirect, url_for, session
+
+log = logging.getLogger(__name__)
 
 
 def get_api_key():
@@ -34,7 +38,10 @@ def validate_key_against_iris(api_key):
             params={"per_page": 1},
         )
         if resp.status_code == 200:
+            log.info("Successful auth from %s", request.remote_addr)
             return True, None
-        return False, f"IRIS returned {resp.status_code}"
+        log.warning("Failed auth attempt from %s (IRIS returned %s)", request.remote_addr, resp.status_code)
+        return False, "Invalid API key"
     except http_requests.RequestException as e:
-        return False, f"Cannot reach IRIS: {e}"
+        log.warning("Cannot reach IRIS for auth validation: %s", e)
+        return False, "Cannot reach IRIS — try again later"

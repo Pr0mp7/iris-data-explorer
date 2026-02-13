@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-02-13
+
+### Security
+- Fixed open redirect vulnerability on login `next` parameter — now validates relative paths only
+- Added security headers: `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`
+- Sanitized error messages — no longer leaks internal hostnames, ports, or stack traces to users
+- Fixed raw data expand button on global Shadowserver page (base64 encoding, matching case explorer fix)
+- Container now runs as non-root user (`appuser`)
+
+### Added
+- Access logging — logs case views, auth attempts (success/failure), and API errors
+- Input validation on DataTables `start`/`length` parameters (clamped to sane bounds)
+
 ## [1.3.0] - 2026-02-13
 
 ### Changed
@@ -47,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docker deployment with healthcheck
 - Lab deployment with external Docker network support
 
+[1.3.1]: https://github.com/Pr0mp7/iris-data-explorer/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/Pr0mp7/iris-data-explorer/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/Pr0mp7/iris-data-explorer/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Pr0mp7/iris-data-explorer/compare/v1.0.0...v1.1.0

@@ -1,3 +1,4 @@
+import logging
 import re
 
 from flask import Flask
@@ -19,6 +20,12 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+    )
+
     app.jinja_env.filters["strip_tags"] = _strip_tags
 
     from .routes import bp
@@ -31,6 +38,9 @@ def create_app():
             f"frame-ancestors 'self' {iris_ext}"
         )
         response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
         return response
 
     return app
