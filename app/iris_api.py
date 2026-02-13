@@ -1,12 +1,39 @@
+import hashlib
+import time
+
 import requests
 from flask import current_app
 
+from .auth import get_api_key
+
+# In-memory cache: {cache_key: {"data": ..., "expires": timestamp}}
+_cache = {}
+
+
+def _cache_key(api_key, *parts):
+    """Generate a cache key from API key hash and parts."""
+    key_hash = hashlib.sha256(api_key.encode()).hexdigest()[:12]
+    return f"{key_hash}:{':'.join(str(p) for p in parts)}"
+
+
+def _get_cached(key):
+    entry = _cache.get(key)
+    if entry and entry["expires"] > time.time():
+        return entry["data"]
+    return None
+
+
+def _set_cached(key, data):
+    ttl = current_app.config["CACHE_TTL"]
+    _cache[key] = {"data": data, "expires": time.time() + ttl}
+
 
 def _get(path, params=None):
-    """Make authenticated GET request to IRIS API."""
+    """Make authenticated GET request to IRIS API using the active user's key."""
+    api_key = get_api_key()
     resp = requests.get(
         f"{current_app.config['IRIS_URL']}{path}",
-        headers={"Authorization": f"Bearer {current_app.config['IRIS_API_KEY']}"},
+        headers={"Authorization": f"Bearer {api_key}"},
         verify=current_app.config["IRIS_VERIFY_SSL"],
         timeout=30,
         params=params,
@@ -16,10 +43,7 @@ def _get(path, params=None):
 
 
 def _collect_paginated(path):
-    """Fetch all pages from a paginated IRIS API v2 endpoint.
-
-    v2 endpoints return: {"total": N, "data": [...], "current_page": 1, "next_page": 2, "last_page": 5}
-    """
+    """Fetch all pages from a paginated IRIS API v2 endpoint."""
     page = 1
     per_page = 100
     all_items = []
@@ -30,7 +54,7 @@ def _collect_paginated(path):
         if isinstance(items, list):
             all_items.extend(items)
         else:
-            return items  # single object, not paginated
+            return items
 
         total = result.get("total")
         if total is not None and len(all_items) >= total:
@@ -43,47 +67,48 @@ def _collect_paginated(path):
 
 
 def _get_legacy(path, params=None):
-    """Fetch from legacy (non-v2) IRIS API endpoint.
-
-    Legacy endpoints return: {"status": "success", "data": ...}
-    """
+    """Fetch from legacy (non-v2) IRIS API endpoint."""
     result = _get(path, params=params)
     return result.get("data", result)
 
 
-def get_case_summary(case_id):
-    """Fetch case metadata."""
+def _get_entity_cached(case_id, entity):
+    """Fetch and cache a single entity type for a case."""
+    api_key = get_api_key()
+    ck = _cache_key(api_key, case_id, entity)
+    cached = _get_cached(ck)
+    if cached is not None:
+        return cached
+
+    fetchers = {
+        "case": lambda: _get_case_summary(case_id),
+        "assets": lambda: _collect_paginated(f"/api/v2/cases/{case_id}/assets"),
+        "iocs": lambda: _collect_paginated(f"/api/v2/cases/{case_id}/iocs"),
+        "events": lambda: _get_events(case_id),
+        "tasks": lambda: _collect_paginated(f"/api/v2/cases/{case_id}/tasks"),
+        "notes": lambda: _get_notes(case_id),
+        "evidences": lambda: _collect_paginated(f"/api/v2/cases/{case_id}/evidences"),
+    }
+
+    data = fetchers[entity]()
+    _set_cached(ck, data)
+    return data
+
+
+def _get_case_summary(case_id):
     result = _get(f"/api/v2/cases/{case_id}")
     return result.get("data", result)
 
 
-def get_case_assets(case_id):
-    return _collect_paginated(f"/api/v2/cases/{case_id}/assets")
-
-
-def get_case_iocs(case_id):
-    return _collect_paginated(f"/api/v2/cases/{case_id}/iocs")
-
-
-def get_case_events(case_id):
-    """Fetch timeline events — uses legacy endpoint (v2 returns 405)."""
+def _get_events(case_id):
     data = _get_legacy("/case/timeline/events/list", params={"cid": case_id})
     return data.get("timeline", []) if isinstance(data, dict) else data
 
 
-def get_case_tasks(case_id):
-    return _collect_paginated(f"/api/v2/cases/{case_id}/tasks")
-
-
-def get_case_notes(case_id):
-    """Fetch notes — uses legacy endpoint (v2 returns 405).
-
-    Returns note directories with nested notes.
-    """
+def _get_notes(case_id):
     data = _get_legacy("/case/notes/directories/filter", params={"cid": case_id})
     if not isinstance(data, list):
         return []
-    # Flatten: directories contain notes
     notes = []
     for directory in data:
         if isinstance(directory, dict):
@@ -92,23 +117,34 @@ def get_case_notes(case_id):
     return notes
 
 
-def get_case_evidences(case_id):
-    return _collect_paginated(f"/api/v2/cases/{case_id}/evidences")
+def get_case_summary(case_id):
+    return _get_entity_cached(case_id, "case")
+
+
+def get_entity(case_id, entity):
+    """Fetch a single entity type for a case (cached)."""
+    return _get_entity_cached(case_id, entity)
 
 
 def get_case_data(case_id):
     """Fetch all case entities via IRIS REST API."""
     return {
         "case": get_case_summary(case_id),
-        "assets": get_case_assets(case_id),
-        "iocs": get_case_iocs(case_id),
-        "events": get_case_events(case_id),
-        "tasks": get_case_tasks(case_id),
-        "notes": get_case_notes(case_id),
-        "evidences": get_case_evidences(case_id),
+        "assets": get_entity(case_id, "assets"),
+        "iocs": get_entity(case_id, "iocs"),
+        "events": get_entity(case_id, "events"),
+        "tasks": get_entity(case_id, "tasks"),
+        "notes": get_entity(case_id, "notes"),
+        "evidences": get_entity(case_id, "evidences"),
     }
 
 
 def get_cases_list():
-    """Fetch list of all cases."""
-    return _collect_paginated("/api/v2/cases")
+    api_key = get_api_key()
+    ck = _cache_key(api_key, "cases_list")
+    cached = _get_cached(ck)
+    if cached is not None:
+        return cached
+    data = _collect_paginated("/api/v2/cases")
+    _set_cached(ck, data)
+    return data

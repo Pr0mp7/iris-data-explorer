@@ -10,4 +10,13 @@ def create_app():
     from .routes import bp
     app.register_blueprint(bp)
 
+    @app.after_request
+    def set_security_headers(response):
+        iris_url = app.config["IRIS_URL"]
+        response.headers["Content-Security-Policy"] = (
+            f"frame-ancestors 'self' {iris_url}"
+        )
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        return response
+
     return app

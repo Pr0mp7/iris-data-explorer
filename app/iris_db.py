@@ -148,6 +148,20 @@ def get_case_evidences(case_id):
     )
 
 
+def get_entity(case_id, entity):
+    """Fetch a single entity type for a case."""
+    fetchers = {
+        "case": get_case_summary,
+        "assets": get_case_assets,
+        "iocs": get_case_iocs,
+        "events": get_case_events,
+        "tasks": get_case_tasks,
+        "notes": get_case_notes,
+        "evidences": get_case_evidences,
+    }
+    return fetchers[entity](case_id)
+
+
 def get_case_data(case_id):
     """Fetch all case entities via direct PostgreSQL queries."""
     summary = get_case_summary(case_id)

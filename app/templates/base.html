@@ -20,6 +20,9 @@
                 <button id="theme-toggle" class="btn btn-sm btn-outline-secondary" title="Toggle theme">
                     <span id="theme-icon">&#9728;</span>
                 </button>
+                {% if session.get('api_key') %}
+                <a href="/logout" class="btn btn-sm btn-outline-danger" title="Logout">Logout</a>
+                {% endif %}
             </div>
         </div>
     </nav>

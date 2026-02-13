@@ -1,44 +1,40 @@
-import time
-
-import requests
-from flask import current_app, request, abort, g
-
-# Cache: {api_key: {"expires": timestamp, "valid": bool}}
-_auth_cache = {}
+import requests as http_requests
+from flask import current_app, request, redirect, url_for, session
 
 
-def validate_api_key():
-    """Validate IRIS API key from config. Called before each request."""
-    # Skip auth for health check
-    if request.path == "/health":
+def get_api_key():
+    """Get the active API key — from session (pass-through) or env (service mode)."""
+    env_key = current_app.config["IRIS_API_KEY"]
+    if env_key:
+        return env_key
+    return session.get("api_key", "")
+
+
+def require_auth():
+    """Before-request handler: ensure user is authenticated."""
+    # Skip auth for health check and login routes
+    if request.path in ("/health", "/login", "/logout"):
+        return
+    if request.path.startswith("/static/"):
         return
 
-    api_key = current_app.config["IRIS_API_KEY"]
+    api_key = get_api_key()
     if not api_key:
-        abort(401, description="IRIS_API_KEY not configured")
+        return redirect(url_for("main.login", next=request.url))
 
-    now = time.time()
-    cached = _auth_cache.get(api_key)
-    if cached and cached["expires"] > now:
-        if not cached["valid"]:
-            abort(401, description="Invalid IRIS API key")
-        return
 
-    # Validate against IRIS API
-    ttl = current_app.config["AUTH_CACHE_TTL"]
+def validate_key_against_iris(api_key):
+    """Validate an API key by calling IRIS. Returns (valid, user_info)."""
     try:
-        resp = requests.get(
+        resp = http_requests.get(
             f"{current_app.config['IRIS_URL']}/api/v2/cases",
             headers={"Authorization": f"Bearer {api_key}"},
             verify=current_app.config["IRIS_VERIFY_SSL"],
             timeout=10,
             params={"per_page": 1},
         )
-        valid = resp.status_code == 200
-    except requests.RequestException:
-        valid = False
-
-    _auth_cache[api_key] = {"expires": now + ttl, "valid": valid}
-
-    if not valid:
-        abort(401, description="Invalid IRIS API key or IRIS unreachable")
+        if resp.status_code == 200:
+            return True, None
+        return False, f"IRIS returned {resp.status_code}"
+    except http_requests.RequestException as e:
+        return False, f"Cannot reach IRIS: {e}"
