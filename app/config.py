@@ -28,3 +28,11 @@ class Config:
 
     # Auto-refresh interval in seconds (0 = disabled)
     REFRESH_INTERVAL = int(os.environ.get("REFRESH_INTERVAL", "30"))
+
+    # Shadowserver integration (read-only viewer for shadowserver_db)
+    SS_ENABLED = os.environ.get("SS_ENABLED", "false").lower() == "true"
+    SS_DB_HOST = os.environ.get("SS_DB_HOST", "postgres")
+    SS_DB_PORT = int(os.environ.get("SS_DB_PORT", "5432"))
+    SS_DB_NAME = os.environ.get("SS_DB_NAME", "shadowserver_db")
+    SS_DB_USER = os.environ.get("SS_DB_USER", "shadowserver_viewer")
+    SS_DB_PASSWORD = os.environ.get("SS_DB_PASSWORD", "")
