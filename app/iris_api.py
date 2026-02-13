@@ -4,7 +4,10 @@ import time
 from collections import OrderedDict
 
 import requests
+import urllib3
 from flask import current_app
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 from .auth import get_api_key
 

@@ -1,7 +1,10 @@
 import logging
 
 import requests as http_requests
+import urllib3
 from flask import current_app, request, redirect, url_for, session
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 log = logging.getLogger(__name__)
 
