@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-02-14
+
+### Added
+- Entity count badges on tabs — shows record count (e.g. `Assets (12)`) for instant triage awareness
+- Keyboard shortcuts — `Alt+1`–`Alt+7` switch tabs, `Alt+←/→` cycle, `Esc` close modals
+- Click row to expand full record — inline detail panel showing all fields untruncated
+- Resolve IDs to human labels — asset types, IOC types, TLP, status, severity display readable names via IRIS lookup endpoints
+- Persistent table state — page, sort, and filters preserved across tab switches and page refreshes
+- Status, Severity, and Owner columns on cases list — previously hidden API fields now displayed
+- Previous/Next case navigation buttons in case header
+- Manual "Refresh Now" button next to auto-refresh timer
+- TLP color-coded badges — RED/AMBER/GREEN/CLEAR with standard colors
+- IOC context menu — right-click IOC rows for VirusTotal, AbuseIPDB, Shodan, Censys lookups
+- Page length selector — choose 10/25/50/100 rows per page on all DataTables
+- Breadcrumb navigation (`All Cases > Case #42`) below case header
+- Sticky table headers — column headers stay visible when scrolling long tables
+- Deep links to specific IRIS entities — ID links open exact entity page, not the list
+- Status/Severity badges in case explorer header — color-coded Open/Closed + severity indicators
+- Shadowserver indicator count feedback — "Searched 5 IPs, 2 hostnames — 0 matches"
+- Copy row as JSON — full row data available via expand panel
+- Deferred tab loading — only active tab loads initially; others init on first click (7→1 initial API calls)
+- `/api/lookups` endpoint — serves IRIS lookup tables for client-side label resolution
+- `/api/case-neighbors/<id>` endpoint — returns previous/next case IDs for navigation
+
 ## [1.3.2] - 2026-02-13
 
 ### Security
@@ -73,6 +97,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docker deployment with healthcheck
 - Lab deployment with external Docker network support
 
+[1.5.0]: https://github.com/Pr0mp7/iris-data-explorer/compare/v1.4.2...v1.5.0
 [1.3.2]: https://github.com/Pr0mp7/iris-data-explorer/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/Pr0mp7/iris-data-explorer/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/Pr0mp7/iris-data-explorer/compare/v1.2.0...v1.3.0

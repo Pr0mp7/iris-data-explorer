@@ -814,3 +814,195 @@ table.dataTable td {
 .tab-content {
     min-height: 200px;
 }
+
+/* ── Sticky table headers (#14) ──────────────────────────── */
+.dataTables_scrollHead,
+table.dataTable thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--iris-card-bg);
+}
+
+table.dataTable thead th {
+    background: var(--iris-card-bg);
+}
+
+.dt-column-filters th {
+    position: sticky;
+    top: 36px;
+    z-index: 1;
+}
+
+/* ── Entity count badges on tabs (#1) ────────────────────── */
+.nav-tabs .badge-count {
+    font-size: 0.7rem;
+    padding: 0.15em 0.45em;
+    vertical-align: middle;
+    margin-left: 4px;
+    font-weight: 600;
+    border-radius: 8px;
+}
+
+/* ── Row expand / child row (#3) ─────────────────────────── */
+.expandable-row {
+    cursor: pointer;
+}
+
+.expandable-row:hover td {
+    background-color: var(--iris-table-hover) !important;
+}
+
+.row-expanded {
+    background-color: var(--iris-table-hover) !important;
+}
+
+.row-expanded td {
+    border-bottom-color: transparent !important;
+}
+
+.row-detail-panel {
+    background: var(--iris-filter-bg);
+    border-left: 3px solid var(--iris-primary);
+    border-radius: 0 0 4px 4px;
+    margin: 0;
+}
+
+.row-detail-panel table td {
+    padding: 0.3rem 0.6rem;
+    border-bottom: 1px solid var(--iris-border);
+    max-width: none;
+    white-space: normal;
+}
+
+/* ── Breadcrumb (#13) ────────────────────────────────────── */
+.breadcrumb-iris {
+    font-size: 0.82rem;
+    padding: 0;
+    margin: 0 0 0.25rem 0;
+    background: transparent;
+}
+
+.breadcrumb-iris a {
+    color: var(--iris-link);
+    text-decoration: none;
+}
+
+.breadcrumb-iris a:hover {
+    text-decoration: underline;
+}
+
+.breadcrumb-iris .separator {
+    color: var(--iris-muted);
+    margin: 0 0.4rem;
+}
+
+/* ── TLP badges (#10) ────────────────────────────────────── */
+.badge[style*="background"] {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+/* ── Status/Severity badges in case header (#16) ─────────── */
+.case-header .badge-status,
+.case-header .badge-severity {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.2em 0.6em;
+    vertical-align: middle;
+}
+
+/* ── IOC context menu (#11) ──────────────────────────────── */
+.ioc-context-menu {
+    min-width: 160px;
+    font-size: 0.84rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+[data-bs-theme="dark"] .ioc-context-menu {
+    background: #363e53;
+    border: 1px solid #004079b0;
+}
+
+[data-bs-theme="dark"] .ioc-context-menu .dropdown-item {
+    color: #cac7c7;
+}
+
+[data-bs-theme="dark"] .ioc-context-menu .dropdown-item:hover {
+    background: #1a2035;
+    color: #ffffff;
+}
+
+/* ── Loading skeleton (#18) ──────────────────────────────── */
+@keyframes skeleton-pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 0.3; }
+    100% { opacity: 0.6; }
+}
+
+.skeleton-row td {
+    position: relative;
+    overflow: hidden;
+}
+
+.skeleton-bar {
+    display: inline-block;
+    height: 12px;
+    border-radius: 3px;
+    background: var(--iris-border);
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* ── Page length selector (#12) ──────────────────────────── */
+.dataTables_wrapper .dataTables_length {
+    float: left;
+    margin-bottom: 0.5rem;
+}
+
+.dataTables_wrapper .dataTables_length label {
+    font-size: 0.82rem;
+    color: var(--iris-muted);
+}
+
+.dataTables_wrapper .dataTables_length select {
+    display: inline-block;
+    width: auto;
+    margin: 0 4px;
+}
+
+/* ── Manual refresh button (#9) ──────────────────────────── */
+.btn-refresh {
+    font-size: 0.9rem;
+    padding: 0.15rem 0.5rem;
+    line-height: 1.2;
+    border-radius: 4px;
+    color: var(--iris-muted);
+    border-color: var(--iris-border);
+}
+
+.btn-refresh:hover {
+    color: var(--iris-link);
+    border-color: var(--iris-link);
+}
+
+/* ── Prev/Next navigation (#8) ───────────────────────────── */
+.btn-case-nav {
+    font-size: 0.78rem;
+    padding: 0.2rem 0.5rem;
+    color: var(--iris-muted);
+    border-color: var(--iris-border);
+    text-decoration: none;
+}
+
+.btn-case-nav:hover:not(.disabled) {
+    color: var(--iris-link);
+    border-color: var(--iris-link);
+}
+
+.btn-case-nav.disabled {
+    opacity: 0.4;
+    cursor: default;
+    pointer-events: none;
+}

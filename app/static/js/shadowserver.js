@@ -35,7 +35,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Column filters ───────────────────────────────────────────
     function addColumnFilters(dt) {
-        var headerRow = $(dt.table().header()).find('tr');
+        var headerRow = $(dt.table().header()).find('tr').first();
+        if ($(dt.table().header()).find('.dt-column-filters').length > 0) return;
         var filterRow = $('<tr class="dt-column-filters"></tr>');
         dt.columns().every(function (idx) {
             var col = this;
@@ -118,7 +119,9 @@ document.addEventListener('DOMContentLoaded', function () {
         serverSide: true,
         processing: true,
         pageLength: 25,
-        dom: 'Bfrtip',
+        lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+        dom: 'lBfrtip',
+        stateSave: true,
         buttons: ['csv', 'copy'],
         autoWidth: false,
         order: [[0, 'desc']],
@@ -197,7 +200,9 @@ document.addEventListener('DOMContentLoaded', function () {
             '<button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>' +
             '<div class="modal-body"><pre class="mb-0" style="max-height:70vh;overflow:auto;font-size:0.85rem">' +
             escapeHtml(json) + '</pre></div>' +
-            '<div class="modal-footer"><button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button></div>' +
+            '<div class="modal-footer">' +
+            '<button type="button" class="btn btn-sm btn-outline-primary copy-btn" data-copy="' + escapeHtml(json).replace(/"/g, '&quot;') + '">Copy</button>' +
+            '<button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button></div>' +
             '</div></div>';
         document.body.appendChild(modal);
         var bsModal = new bootstrap.Modal(modal);

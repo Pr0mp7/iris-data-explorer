@@ -299,6 +299,92 @@ def _apply_column_filters(data, args):
     return data
 
 
+# ── IRIS Lookup API (#4 — resolve IDs to human labels) ───────────
+
+@bp.route("/api/lookups")
+def api_lookups():
+    """Return IRIS lookup tables (asset types, IOC types, TLP, etc.) for client-side label resolution."""
+    lookups = {}
+
+    try:
+        from . import iris_api
+
+        # Try common IRIS lookup endpoints
+        lookup_endpoints = {
+            'asset_type': '/manage/asset-type/list',
+            'ioc_type': '/manage/ioc-types/list',
+            'tlp': '/manage/tlp/list',
+            'case_status': '/manage/case-states/list',
+            'severity': '/manage/severities/list',
+            'task_status': '/manage/task-status/list',
+            'compromise_status': '/manage/compromise-status/list',
+        }
+
+        for key, endpoint in lookup_endpoints.items():
+            try:
+                result = iris_api._get(endpoint)
+                data = result.get('data', result) if isinstance(result, dict) else result
+                mapping = {}
+                if isinstance(data, list):
+                    for item in data:
+                        if isinstance(item, dict):
+                            # IRIS returns different key patterns; try common ones
+                            item_id = (
+                                item.get(f'{key}_id') or
+                                item.get('id') or
+                                item.get(f'{key.split("_")[0]}_id')
+                            )
+                            item_name = (
+                                item.get(f'{key}_name') or
+                                item.get('name') or
+                                item.get(f'{key.split("_")[0]}_name') or
+                                item.get('status_name') or
+                                item.get('severity_name') or
+                                item.get('type_name') or
+                                item.get('tlp_name')
+                            )
+                            if item_id is not None and item_name:
+                                mapping[str(item_id)] = item_name
+                lookups[key] = mapping
+            except Exception:
+                lookups[key] = {}
+    except Exception:
+        log.warning("Failed to fetch IRIS lookups")
+
+    return jsonify(lookups)
+
+
+# ── Case neighbors (#8 — previous/next case navigation) ─────────
+
+@bp.route("/api/case-neighbors/<int:case_id>")
+def case_neighbors(case_id):
+    """Return the previous and next case IDs for sequential navigation."""
+    ds = _get_data_source()
+    try:
+        all_cases = ds.get_cases_list()
+    except Exception:
+        return jsonify({"prev": None, "next": None})
+
+    if not isinstance(all_cases, list):
+        return jsonify({"prev": None, "next": None})
+
+    # Sort by case_id
+    ids = sorted(set(c.get("case_id") for c in all_cases if c.get("case_id") is not None))
+
+    prev_id = None
+    next_id = None
+    try:
+        idx = ids.index(case_id)
+        if idx > 0:
+            prev_id = ids[idx - 1]
+        if idx < len(ids) - 1:
+            next_id = ids[idx + 1]
+    except ValueError:
+        pass
+
+    return jsonify({"prev": prev_id, "next": next_id})
+
+
 # ── JSON API (full dump, kept for programmatic access) ───────────
 
 @bp.route("/api/case/<int:case_id>")
@@ -421,13 +507,20 @@ def datatable_case_shadowserver(case_id):
     column_filters = _extract_column_filters(request.args)
 
     try:
-        return jsonify(ss_db.query_events_by_indicators(
+        result = ss_db.query_events_by_indicators(
             draw=draw, start=start, length=length,
             ips=list(ips), hostnames=list(hostnames), asns=list(asns),
             search_value=search_value,
             order_column=order_column, order_dir=order_dir,
             column_filters=column_filters,
-        ))
+        )
+        # #17: Add indicator count feedback
+        result["indicators"] = {
+            "ips": len(ips),
+            "hostnames": len(hostnames),
+            "asns": len(asns),
+        }
+        return jsonify(result)
     except Exception:
         log.error("Shadowserver case correlation error for case %s", case_id)
         return jsonify({"error": "Failed to query Shadowserver data"}), 500

@@ -8,6 +8,13 @@
 {% endblock %}
 
 {% block content %}
+{# Breadcrumb (#13) #}
+<nav class="breadcrumb-iris">
+    <a href="/">All Cases</a>
+    <span class="separator">&rsaquo;</span>
+    <span class="text-iris-muted">Case #{{ case_id }}</span>
+</nav>
+
 {# Case header #}
 {% set cs = case %}
 <div class="case-header mb-3 p-3 rounded">
@@ -19,45 +26,78 @@
                     <span class="badge bg-iris me-2">#{{ case_id }}</span>
                 </a>
                 {{ cs.case_name if cs.case_name is defined else cs.get('case_name', cs.get('name', 'Unknown')) }}
+                {# Status/Severity badges in header (#16) — JS resolves labels after lookups load #}
+                {% set sid = cs.get('status_id', cs.get('case_status_id', '')) if cs is mapping else '' %}
+                {% set sevid = cs.get('severity_id', cs.get('case_severity_id', '')) if cs is mapping else '' %}
+                {% if sid is not none and sid != '' %}
+                <span class="badge-status badge bg-secondary ms-2" id="header-status-badge" data-status-id="{{ sid }}"></span>
+                {% endif %}
+                {% if sevid is not none and sevid != '' %}
+                <span class="badge-severity badge bg-secondary ms-1" id="header-severity-badge" data-severity-id="{{ sevid }}"></span>
+                {% endif %}
             </h5>
             <p class="text-iris-muted mb-0" style="font-size: 0.88rem;">
                 {{ (cs.case_description if cs.case_description is defined else cs.get('case_description', cs.get('description', ''))) | strip_tags | truncate(300) }}
             </p>
         </div>
         <div class="text-end text-nowrap">
+            {# Prev/Next navigation (#8) #}
+            <div class="mb-1">
+                <a id="btn-prev-case" href="#" class="btn btn-sm btn-case-nav disabled" title="Previous case">&laquo; Prev</a>
+                <a id="btn-next-case" href="#" class="btn btn-sm btn-case-nav disabled" title="Next case">Next &raquo;</a>
+            </div>
             <small class="text-iris-category d-block">
                 SOC ID: {{ cs.case_soc_id if cs.case_soc_id is defined else cs.get('case_soc_id', cs.get('soc_id', 'N/A')) }}
             </small>
             <small class="text-iris-category d-block">
                 Opened: {{ cs.case_open_date if cs.case_open_date is defined else cs.get('case_open_date', cs.get('open_date', 'N/A')) }}
             </small>
+            {% if cs.get('owner') %}
+            <small class="text-iris-category d-block">
+                Owner: {{ cs.owner.user_name if cs.owner is mapping else cs.get('owner', 'N/A') }}
+            </small>
+            {% endif %}
         </div>
     </div>
 </div>
 
-<div class="d-flex justify-content-end mb-2">
+{# Refresh controls (#9) #}
+<div class="d-flex justify-content-end mb-2 gap-2 align-items-center">
     <small id="refresh-status" class="text-iris-muted"></small>
+    <button id="btn-refresh" class="btn btn-sm btn-refresh btn-outline-iris-secondary" title="Refresh now">&#8635;</button>
 </div>
 
-{# Tabs #}
+{# Tabs with entity count badges (#1) #}
 <ul class="nav nav-tabs" id="entityTabs" role="tablist">
     <li class="nav-item">
-        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-assets" type="button">Assets</button>
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-assets" type="button">
+            Assets <span id="badge-assets" class="badge badge-count bg-iris" style="display:none">0</span>
+        </button>
     </li>
     <li class="nav-item">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-iocs" type="button">IOCs</button>
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-iocs" type="button">
+            IOCs <span id="badge-iocs" class="badge badge-count bg-iris" style="display:none">0</span>
+        </button>
     </li>
     <li class="nav-item">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-events" type="button">Timeline</button>
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-events" type="button">
+            Timeline <span id="badge-events" class="badge badge-count bg-iris" style="display:none">0</span>
+        </button>
     </li>
     <li class="nav-item">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-tasks" type="button">Tasks</button>
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-tasks" type="button">
+            Tasks <span id="badge-tasks" class="badge badge-count bg-iris" style="display:none">0</span>
+        </button>
     </li>
     <li class="nav-item">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-notes" type="button">Notes</button>
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-notes" type="button">
+            Notes <span id="badge-notes" class="badge badge-count bg-iris" style="display:none">0</span>
+        </button>
     </li>
     <li class="nav-item">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-evidences" type="button">Evidence</button>
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-evidences" type="button">
+            Evidence <span id="badge-evidences" class="badge badge-count bg-iris" style="display:none">0</span>
+        </button>
     </li>
     {% if config.SS_ENABLED %}
     <li class="nav-item">
@@ -124,7 +164,7 @@
 
     {% if config.SS_ENABLED %}
     <div class="tab-pane fade" id="tab-shadowserver">
-        <p class="text-iris-muted small mb-2">
+        <p class="text-iris-muted small mb-2" id="ss-indicator-feedback">
             Shadowserver events matching IPs, hostnames, and ASNs from this case's IOCs and Assets.
         </p>
         <table id="dt-shadowserver" class="table table-hover" style="width:100%">
