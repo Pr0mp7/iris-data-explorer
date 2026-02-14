@@ -52,10 +52,18 @@ def login():
         return redirect(url_for("main.index"))
 
     error = None
+    # Handle errors redirected from OIDC callback
+    err_code = request.args.get("error", "")
+    if err_code == "keycloak_failed":
+        error = "Authentication failed — please try again"
+    elif err_code == "no_api_key":
+        error = "Your Keycloak account has no IRIS API key configured. Contact your administrator."
+
     if request.method == "POST":
         # CSRF check
         token = request.form.get("csrf_token", "")
         if not token or token != session.get("csrf_token"):
+            log.warning("CSRF mismatch on login from %s", request.remote_addr)
             error = "Invalid form submission — please try again"
         else:
             api_key = request.form.get("api_key", "").strip()
@@ -100,9 +108,7 @@ def auth_callback():
         token = oauth.keycloak.authorize_access_token()
     except Exception as e:
         log.warning("Keycloak token exchange failed: %s", e)
-        return render_template("login.html", error="Authentication failed — please try again",
-                               csrf_token=session.get("csrf_token", secrets.token_hex(32)),
-                               iris_url=current_app.config["IRIS_EXTERNAL_URL"]), 401
+        return redirect(url_for("main.login", error="keycloak_failed"))
 
     userinfo = token.get("userinfo", {})
     iris_api_key = userinfo.get("iris_api_key", "")
@@ -114,12 +120,7 @@ def auth_callback():
 
     if not iris_api_key:
         log.warning("Keycloak user %s has no iris_api_key attribute", userinfo.get("preferred_username", "unknown"))
-        if "csrf_token" not in session:
-            session["csrf_token"] = secrets.token_hex(32)
-        return render_template("login.html",
-                               error="Your Keycloak account has no IRIS API key configured. Contact your administrator.",
-                               csrf_token=session["csrf_token"],
-                               iris_url=current_app.config["IRIS_EXTERNAL_URL"]), 403
+        return redirect(url_for("main.login", error="no_api_key"))
 
     session["api_key"] = iris_api_key
     session["auth_method"] = "keycloak"

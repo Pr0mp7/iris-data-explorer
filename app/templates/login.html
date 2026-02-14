@@ -43,7 +43,7 @@
                 <div class="collapse" id="apiKeyForm">
                 {% endif %}
 
-                <form method="POST">
+                <form method="POST" action="/login">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <div class="mb-3">
                         <label for="api_key" class="form-label">IRIS API Key</label>
