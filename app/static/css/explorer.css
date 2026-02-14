@@ -432,10 +432,9 @@ table.dataTable {
     cursor: default;
 }
 
+/* Processing overlay hidden — we use the refresh-button spin instead */
 .dataTables_processing {
-    background: var(--iris-card-bg) !important;
-    opacity: 0.95;
-    color: var(--iris-body-color);
+    display: none !important;
 }
 
 /* ── Column filter inputs ─────────────────────────────────── */

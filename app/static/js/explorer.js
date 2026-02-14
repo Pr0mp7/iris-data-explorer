@@ -255,33 +255,40 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Refresh helpers: preserve expanded rows + subtle spinner ──
     var refreshBtn = document.getElementById('btn-refresh');
 
-    function getExpandedRowIds(dt) {
+    // Map entity key → row ID field name
+    var entityIdField = {
+        assets: 'asset_id', iocs: 'ioc_id', events: 'event_id',
+        tasks: 'task_id', notes: 'note_id', evidences: 'evidence_id',
+        shadowserver: 'report_date'
+    };
+
+    function getExpandedRowIds(dt, entity) {
         var ids = [];
+        var idField = entityIdField[entity];
         dt.rows().every(function () {
             if (this.child.isShown()) {
                 var d = this.data();
-                // Use the first column value as unique ID
-                var firstKey = Object.keys(d)[0];
-                if (firstKey) ids.push(d[firstKey]);
+                var val = idField ? d[idField] : d[Object.keys(d)[0]];
+                if (val != null) ids.push(String(val));
             }
         });
         return ids;
     }
 
-    function restoreExpandedRows(dt, ids) {
+    function restoreExpandedRows(dt, ids, entity) {
         if (!ids.length) return;
+        var idField = entityIdField[entity];
         dt.rows().every(function () {
             var d = this.data();
-            var firstKey = Object.keys(d)[0];
-            if (firstKey && ids.indexOf(d[firstKey]) !== -1) {
+            var val = idField ? d[idField] : d[Object.keys(d)[0]];
+            if (val != null && ids.indexOf(String(val)) !== -1) {
                 var tr = this.node();
                 if (!tr) return;
                 var b64 = tr.getAttribute('data-row-json');
                 if (!b64) return;
                 var data;
                 try { data = JSON.parse(decodeURIComponent(escape(atob(b64)))); } catch (ex) { return; }
-                var html = buildRowDetail(b64, data);
-                this.child(html).show();
+                this.child(buildRowDetail(b64, data)).show();
                 $(tr).addClass('row-expanded');
             }
         });
@@ -304,10 +311,10 @@ document.addEventListener('DOMContentLoaded', function () {
         var pending = 0;
         var expandedState = {};
 
-        // Save expanded rows for each table
+        // Save expanded rows for each initialized table
         Object.keys(tables).forEach(function (key) {
             if (tables[key]) {
-                expandedState[key] = getExpandedRowIds(tables[key]);
+                expandedState[key] = getExpandedRowIds(tables[key], key);
                 pending++;
             }
         });
@@ -322,9 +329,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 ? '/api/dt/case/' + CASE_ID + '/shadowserver' + suffix
                 : '/api/dt/case/' + CASE_ID + '/' + key + suffix;
             t.ajax.url(url).load(function () {
-                // Restore expanded rows after data loads
                 if (expandedState[key] && expandedState[key].length) {
-                    restoreExpandedRows(t, expandedState[key]);
+                    restoreExpandedRows(t, expandedState[key], key);
                 }
                 pending--;
                 if (pending <= 0) {
