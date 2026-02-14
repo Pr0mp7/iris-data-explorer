@@ -1,13 +1,38 @@
+import logging
 import os
 import secrets
 from datetime import timedelta
 
+log = logging.getLogger(__name__)
+
+_auto_key = secrets.token_hex(32)
+
 
 class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY", secrets.token_hex(32))
+    SECRET_KEY = os.environ.get("SECRET_KEY", "")
+    if not SECRET_KEY:
+        SECRET_KEY = _auto_key
+        log.warning(
+            "SECRET_KEY not set — using auto-generated key. "
+            "Sessions will not survive container restarts. "
+            "Set SECRET_KEY in .env for persistent sessions."
+        )
+
     PERMANENT_SESSION_LIFETIME = timedelta(
         hours=int(os.environ.get("SESSION_TIMEOUT_HOURS", "8"))
     )
+
+    # Server-side sessions (filesystem)
+    SESSION_TYPE = "filesystem"
+    SESSION_FILE_DIR = "/tmp/flask_sessions"
+    SESSION_PERMANENT = True
+    SESSION_USE_SIGNER = True
+    SESSION_KEY_PREFIX = "ide:"
+
+    # Session cookie security (Finding 4)
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", "false").lower() == "true"
 
     IRIS_URL = os.environ.get("IRIS_URL", "https://localhost:4443")
     # Browser-facing IRIS URL for deep links. Defaults to IRIS_URL if not set.
@@ -26,6 +51,7 @@ class Config:
     DB_NAME = os.environ.get("DB_NAME", "iris_db")
     DB_USER = os.environ.get("DB_USER", "iris")
     DB_PASSWORD = os.environ.get("DB_PASSWORD", "")
+    DB_SSL_MODE = os.environ.get("DB_SSL_MODE", "prefer")
 
     # Data cache TTL in seconds (how long fetched case data is cached)
     CACHE_TTL = int(os.environ.get("CACHE_TTL", "300"))
@@ -40,3 +66,4 @@ class Config:
     SS_DB_NAME = os.environ.get("SS_DB_NAME", "shadowserver_db")
     SS_DB_USER = os.environ.get("SS_DB_USER", "shadowserver_viewer")
     SS_DB_PASSWORD = os.environ.get("SS_DB_PASSWORD", "")
+    SS_DB_SSL_MODE = os.environ.get("SS_DB_SSL_MODE", "prefer")

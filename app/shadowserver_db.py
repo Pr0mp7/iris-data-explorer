@@ -19,6 +19,7 @@ def _get_pool():
             dbname=current_app.config["SS_DB_NAME"],
             user=current_app.config["SS_DB_USER"],
             password=current_app.config["SS_DB_PASSWORD"],
+            sslmode=current_app.config.get("SS_DB_SSL_MODE", "prefer"),
         )
     return current_app._ss_db_pool
 

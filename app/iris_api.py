@@ -106,6 +106,15 @@ def invalidate_cache(api_key, case_id, entity=None):
                 del _cache[k]
 
 
+def invalidate_user_cache(api_key):
+    """Remove all cached data for a user's API key (called on logout)."""
+    key_hash = hashlib.sha256(api_key.encode()).hexdigest()[:12]
+    prefix = f"{key_hash}:"
+    for k in list(_cache.keys()):
+        if k.startswith(prefix):
+            del _cache[k]
+
+
 def _get_entity_cached(case_id, entity, bust_cache=False):
     """Fetch and cache a single entity type for a case."""
     api_key = get_api_key()

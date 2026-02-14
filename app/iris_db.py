@@ -15,6 +15,7 @@ def _get_pool():
             dbname=current_app.config["DB_NAME"],
             user=current_app.config["DB_USER"],
             password=current_app.config["DB_PASSWORD"],
+            sslmode=current_app.config.get("DB_SSL_MODE", "prefer"),
         )
     return current_app._iris_db_pool
 

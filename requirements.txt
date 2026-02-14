@@ -1,5 +1,6 @@
 flask==3.1.0
 gunicorn==23.0.0
 requests==2.32.3
-psycopg2-binary==2.9.10
-flask-limiter==3.8.0
+psycopg2==2.9.10
+flask-limiter[memcached]==3.8.0
+flask-session==0.8.0

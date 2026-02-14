@@ -1,16 +1,25 @@
 import logging
+import os
 import re
 
 from flask import Flask, session
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_session import Session
 from markupsafe import Markup
 
 from .config import Config
 
 _TAG_RE = re.compile(r"<[^>]+>|<!--.*?-->", re.DOTALL)
 
-limiter = Limiter(key_func=get_remote_address, default_limits=[], storage_uri="memory://")
+# File-based rate limiter storage shared across gunicorn workers (Finding 9)
+_limiter_storage = "file:///tmp/flask_limiter"
+
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["120 per minute"],
+    storage_uri=_limiter_storage,
+)
 
 
 def _strip_tags(value):
@@ -29,6 +38,10 @@ def create_app():
         level=logging.INFO,
         format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
     )
+
+    # Server-side sessions (Finding 1)
+    os.makedirs(app.config["SESSION_FILE_DIR"], exist_ok=True)
+    Session(app)
 
     # Rate limiter
     limiter.init_app(app)
@@ -54,13 +67,23 @@ def create_app():
     @app.after_request
     def set_security_headers(response):
         iris_ext = app.config["IRIS_EXTERNAL_URL"]
+
+        # Full Content-Security-Policy (Finding 7)
         response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self'; "
+            "style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; "
+            "font-src 'self' https://fonts.gstatic.com; "
+            "img-src 'self' data:; "
+            "connect-src 'self'; "
             f"frame-ancestors 'self' {iris_ext}"
         )
         response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        # Finding 15: Removed X-Frame-Options — CSP frame-ancestors handles this
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        # Finding 6: HSTS
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         return response
 
     return app

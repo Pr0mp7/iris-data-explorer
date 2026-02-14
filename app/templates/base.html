@@ -30,7 +30,10 @@
                     <span id="theme-icon">&#9728;</span>
                 </button>
                 {% if session.get('api_key') %}
-                <a href="/logout" class="btn btn-sm btn-nav-danger" title="Logout">Logout</a>
+                <form action="/logout" method="POST" class="d-inline m-0 p-0">
+                    <input type="hidden" name="csrf_token" value="{{ session.get('csrf_token', '') }}">
+                    <button type="submit" class="btn btn-sm btn-nav-danger" title="Logout">Logout</button>
+                </form>
                 {% endif %}
             </div>
         </div>

@@ -4,6 +4,9 @@ services:
     image: iris-data-explorer:latest
     container_name: iris-data-explorer
     restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=64M
     ports:
       - "${EXPLORER_PORT:-8087}:5000"
     env_file: .env
