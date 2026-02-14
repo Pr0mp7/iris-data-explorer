@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/explorer.css') }}">
     <link rel="icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
 </head>
-<body>
+<body {% block body_attrs %}{% endblock %}>
     <nav class="navbar navbar-iris">
         <div class="container-fluid d-flex align-items-center justify-content-between">
             <a class="navbar-brand" href="/">

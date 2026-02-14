@@ -23,9 +23,4 @@
 </table>
 {% endblock %}
 
-{% block scripts %}
-<script>
-    var IRIS_URL = {{ iris_url | tojson }};
-    var REFRESH_INTERVAL = {{ refresh_interval }};
-</script>
-{% endblock %}
+{% block body_attrs %}data-iris-url="{{ iris_url }}" data-refresh-interval="{{ refresh_interval }}"{% endblock %}

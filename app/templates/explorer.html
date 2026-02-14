@@ -139,10 +139,4 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
-<script>
-    var CASE_ID = {{ case_id }};
-    var IRIS_URL = {{ iris_url | tojson }};
-    var REFRESH_INTERVAL = {{ refresh_interval }};
-</script>
-{% endblock %}
+{% block body_attrs %}data-case-id="{{ case_id }}" data-iris-url="{{ iris_url }}" data-refresh-interval="{{ refresh_interval }}"{% endblock %}

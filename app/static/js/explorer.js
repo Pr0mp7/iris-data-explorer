@@ -50,8 +50,14 @@ document.addEventListener('DOMContentLoaded', function () {
         return '';
     }
 
+    // Read config from data attributes (CSP-safe, no inline scripts)
+    var _body = document.body;
+    var CASE_ID = _body.dataset.caseId ? parseInt(_body.dataset.caseId, 10) : undefined;
+    var IRIS_URL = _body.dataset.irisUrl || '';
+    var REFRESH_INTERVAL = _body.dataset.refreshInterval ? parseInt(_body.dataset.refreshInterval, 10) : 0;
+
     function irisLink(path, text) {
-        if (typeof IRIS_URL === 'undefined') return escapeHtml(text);
+        if (!IRIS_URL) return escapeHtml(text);
         return '<a href="' + escapeHtml(IRIS_URL) + path + '" target="_blank" ' +
                'class="text-decoration-none">' + escapeHtml(text) + '</a>';
     }
@@ -119,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // ── Auto-refresh status ─────────────────────────────────────
-    var refreshInterval = (typeof REFRESH_INTERVAL !== 'undefined') ? REFRESH_INTERVAL : 0;
+    var refreshInterval = REFRESH_INTERVAL || 0;
     var statusEl = document.getElementById('refresh-status');
     var lastRefresh = new Date();
 
@@ -137,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Cases list page (AJAX DataTable) ────────────────────────
     var casesTable = document.getElementById('cases-table');
-    if (casesTable && typeof CASE_ID === 'undefined') {
+    if (casesTable && CASE_ID === undefined) {
         var irisUrl = (typeof IRIS_URL !== 'undefined') ? IRIS_URL : '';
         var dt = new DataTable('#cases-table', {
             serverSide: true,
@@ -183,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ── Server-side DataTables (case explorer) ──────────────────
-    if (typeof CASE_ID === 'undefined') return;
+    if (CASE_ID === undefined) return;
 
     var dtDefaults = {
         serverSide: true,
