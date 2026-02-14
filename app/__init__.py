@@ -10,6 +10,8 @@ from markupsafe import Markup
 
 from .config import Config
 
+APP_VERSION = "1.5.1"
+
 _TAG_RE = re.compile(r"<[^>]+>|<!--.*?-->", re.DOTALL)
 
 # In-memory rate limiter — per-worker state. For cross-worker sharing, use redis://
@@ -50,6 +52,7 @@ def create_app():
         session.permanent = True
 
     app.jinja_env.filters["strip_tags"] = _strip_tags
+    app.jinja_env.globals["app_version"] = APP_VERSION
 
     from .routes import bp
     app.register_blueprint(bp)

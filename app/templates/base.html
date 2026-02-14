@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/datatables.bootstrap5.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/buttons.bootstrap5.min.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/explorer.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/explorer.css') }}?v={{ app_version }}">
     <link rel="icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
 </head>
 <body {% block body_attrs %}{% endblock %}>
@@ -54,7 +54,7 @@
     <script src="{{ url_for('static', filename='js/datatables.buttons.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/buttons.html5.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/buttons.bootstrap5.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/explorer.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/explorer.js') }}?v={{ app_version }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -157,8 +157,17 @@ def _get_notes(case_id):
     notes = []
     for directory in data:
         if isinstance(directory, dict):
+            dir_name = directory.get("name", "")
             for note in directory.get("notes", []):
-                notes.append(note)
+                # Normalize field names — legacy API returns 'id'/'title',
+                # not 'note_id'/'note_title'
+                normalized = dict(note)
+                if "note_id" not in normalized and "id" in normalized:
+                    normalized["note_id"] = normalized["id"]
+                if "note_title" not in normalized and "title" in normalized:
+                    normalized["note_title"] = normalized["title"]
+                normalized.setdefault("note_directory", dir_name)
+                notes.append(normalized)
     return notes
 
 
