@@ -9,7 +9,7 @@ from flask import (
 )
 
 from .auth import require_auth, validate_key_against_iris, get_api_key
-from . import limiter
+from . import limiter, oauth
 
 import hashlib
 import logging
@@ -81,6 +81,53 @@ def login():
                            iris_url=current_app.config["IRIS_EXTERNAL_URL"])
 
 
+@bp.route("/auth/keycloak")
+def auth_keycloak():
+    """Initiate Keycloak OIDC login."""
+    if not current_app.config["KEYCLOAK_ENABLED"]:
+        return redirect(url_for("main.login"))
+    redirect_uri = url_for("main.auth_callback", _external=True)
+    return oauth.keycloak.authorize_redirect(redirect_uri)
+
+
+@bp.route("/auth/callback")
+def auth_callback():
+    """Handle Keycloak OIDC callback — exchange code for tokens, extract iris_api_key."""
+    if not current_app.config["KEYCLOAK_ENABLED"]:
+        return redirect(url_for("main.login"))
+
+    try:
+        token = oauth.keycloak.authorize_access_token()
+    except Exception as e:
+        log.warning("Keycloak token exchange failed: %s", e)
+        return render_template("login.html", error="Authentication failed — please try again",
+                               csrf_token=session.get("csrf_token", secrets.token_hex(32)),
+                               iris_url=current_app.config["IRIS_EXTERNAL_URL"]), 401
+
+    userinfo = token.get("userinfo", {})
+    iris_api_key = userinfo.get("iris_api_key", "")
+
+    if not iris_api_key:
+        # Also check ID token claims
+        id_token_claims = token.get("id_token", {}) if isinstance(token.get("id_token"), dict) else {}
+        iris_api_key = id_token_claims.get("iris_api_key", "")
+
+    if not iris_api_key:
+        log.warning("Keycloak user %s has no iris_api_key attribute", userinfo.get("preferred_username", "unknown"))
+        if "csrf_token" not in session:
+            session["csrf_token"] = secrets.token_hex(32)
+        return render_template("login.html",
+                               error="Your Keycloak account has no IRIS API key configured. Contact your administrator.",
+                               csrf_token=session["csrf_token"],
+                               iris_url=current_app.config["IRIS_EXTERNAL_URL"]), 403
+
+    session["api_key"] = iris_api_key
+    session["auth_method"] = "keycloak"
+    session["kc_id_token"] = token.get("id_token")
+    log.info("Keycloak SSO login for user %s from %s", userinfo.get("preferred_username", "unknown"), request.remote_addr)
+    return redirect(url_for("main.index"))
+
+
 @bp.route("/logout", methods=["POST"])
 def logout():
     """Logout via POST with CSRF token (Finding 5)."""
@@ -94,7 +141,23 @@ def logout():
         from . import iris_api
         iris_api.invalidate_user_cache(api_key)
 
+    # Build Keycloak logout URL before clearing session
+    kc_logout_url = None
+    if session.get("auth_method") == "keycloak" and current_app.config["KEYCLOAK_ENABLED"]:
+        kc_url = current_app.config["KEYCLOAK_SERVER_URL"].rstrip("/")
+        realm = current_app.config["KEYCLOAK_REALM"]
+        id_token_hint = session.get("kc_id_token", "")
+        post_logout = url_for("main.login", _external=True)
+        kc_logout_url = (
+            f"{kc_url}/realms/{realm}/protocol/openid-connect/logout"
+            f"?id_token_hint={id_token_hint}"
+            f"&post_logout_redirect_uri={post_logout}"
+        )
+
     session.clear()
+
+    if kc_logout_url:
+        return redirect(kc_logout_url)
     return redirect(url_for("main.login"))
 
 
