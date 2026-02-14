@@ -12,13 +12,11 @@ from .config import Config
 
 _TAG_RE = re.compile(r"<[^>]+>|<!--.*?-->", re.DOTALL)
 
-# File-based rate limiter storage shared across gunicorn workers (Finding 9)
-_limiter_storage = "file:///tmp/flask_limiter"
-
+# In-memory rate limiter — per-worker state. For cross-worker sharing, use redis://
 limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["120 per minute"],
-    storage_uri=_limiter_storage,
+    storage_uri="memory://",
 )
 
 
