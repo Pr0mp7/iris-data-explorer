@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Finding 17: psycopg2 (not -binary) needs libpq-dev + gcc
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libpq-dev gcc && \
+    apt-get install -y --no-install-recommends libpq-dev gcc libc6-dev && \
     rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
