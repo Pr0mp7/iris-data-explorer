@@ -986,11 +986,25 @@ table.dataTable thead th {
     border-radius: 4px;
     color: var(--iris-muted);
     border-color: var(--iris-border);
+    transition: border-color 0.15s, color 0.15s;
 }
 
 .btn-refresh:hover {
     color: var(--iris-link);
     border-color: var(--iris-link);
+}
+
+/* Spin animation while refreshing */
+@keyframes refresh-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.btn-refresh.refreshing {
+    color: var(--iris-info);
+    border-color: var(--iris-info);
+    animation: refresh-spin 0.8s linear infinite;
+    pointer-events: none;
 }
 
 /* ── Prev/Next navigation (#8) ───────────────────────────── */

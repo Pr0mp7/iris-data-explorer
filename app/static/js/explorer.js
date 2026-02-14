@@ -252,25 +252,93 @@ document.addEventListener('DOMContentLoaded', function () {
         updateStatus();
     }
 
-    // ── Manual refresh button (#9) ──────────────────────────────
+    // ── Refresh helpers: preserve expanded rows + subtle spinner ──
     var refreshBtn = document.getElementById('btn-refresh');
+
+    function getExpandedRowIds(dt) {
+        var ids = [];
+        dt.rows().every(function () {
+            if (this.child.isShown()) {
+                var d = this.data();
+                // Use the first column value as unique ID
+                var firstKey = Object.keys(d)[0];
+                if (firstKey) ids.push(d[firstKey]);
+            }
+        });
+        return ids;
+    }
+
+    function restoreExpandedRows(dt, ids) {
+        if (!ids.length) return;
+        dt.rows().every(function () {
+            var d = this.data();
+            var firstKey = Object.keys(d)[0];
+            if (firstKey && ids.indexOf(d[firstKey]) !== -1) {
+                var tr = this.node();
+                if (!tr) return;
+                var b64 = tr.getAttribute('data-row-json');
+                if (!b64) return;
+                var data;
+                try { data = JSON.parse(decodeURIComponent(escape(atob(b64)))); } catch (ex) { return; }
+                var html = buildRowDetail(b64, data);
+                this.child(html).show();
+                $(tr).addClass('row-expanded');
+            }
+        });
+    }
+
+    function startRefreshSpin() {
+        if (refreshBtn) {
+            refreshBtn.classList.add('refreshing');
+        }
+    }
+
+    function stopRefreshSpin() {
+        if (refreshBtn) {
+            refreshBtn.classList.remove('refreshing');
+        }
+    }
+
+    function refreshAllTables(bustCache) {
+        var suffix = bustCache ? '?refresh=1' : '';
+        var pending = 0;
+        var expandedState = {};
+
+        // Save expanded rows for each table
+        Object.keys(tables).forEach(function (key) {
+            if (tables[key]) {
+                expandedState[key] = getExpandedRowIds(tables[key]);
+                pending++;
+            }
+        });
+
+        if (!pending) return;
+        startRefreshSpin();
+
+        Object.keys(tables).forEach(function (key) {
+            var t = tables[key];
+            if (!t) return;
+            var url = key === 'shadowserver'
+                ? '/api/dt/case/' + CASE_ID + '/shadowserver' + suffix
+                : '/api/dt/case/' + CASE_ID + '/' + key + suffix;
+            t.ajax.url(url).load(function () {
+                // Restore expanded rows after data loads
+                if (expandedState[key] && expandedState[key].length) {
+                    restoreExpandedRows(t, expandedState[key]);
+                }
+                pending--;
+                if (pending <= 0) {
+                    lastRefresh = new Date();
+                    stopRefreshSpin();
+                }
+            }, false);
+        });
+    }
+
+    // Manual refresh button
     if (refreshBtn) {
         refreshBtn.addEventListener('click', function () {
-            refreshBtn.disabled = true;
-            refreshBtn.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"></div>';
-            Object.keys(tables).forEach(function (key) {
-                if (tables[key]) {
-                    var url = key === 'shadowserver'
-                        ? '/api/dt/case/' + CASE_ID + '/shadowserver?refresh=1'
-                        : '/api/dt/case/' + CASE_ID + '/' + key + '?refresh=1';
-                    tables[key].ajax.url(url).load(null, false);
-                }
-            });
-            lastRefresh = new Date();
-            setTimeout(function () {
-                refreshBtn.disabled = false;
-                refreshBtn.innerHTML = '&#8635;';
-            }, 1000);
+            refreshAllTables(true);
         });
     }
 
@@ -361,7 +429,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var dtDefaults = {
         serverSide: true,
-        processing: true,
+        processing: false,
         pageLength: 25,
         lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
         dom: 'lBfrtip',
@@ -370,8 +438,7 @@ document.addEventListener('DOMContentLoaded', function () {
         autoWidth: false,
         language: {
             emptyTable: 'No data available',
-            search: 'Filter:',
-            processing: '<div class="spinner-border spinner-border-sm" role="status"></div> Loading...'
+            search: 'Filter:'
         },
         initComplete: function () {
             addColumnFilters(this.api());
@@ -614,6 +681,26 @@ document.addEventListener('DOMContentLoaded', function () {
         modal.addEventListener('hidden.bs.modal', function () { modal.remove(); });
     });
 
+    // ── Build row detail HTML (shared by click expand + restore) ──
+    function buildRowDetail(b64, data) {
+        var html = '<div class="row-detail-panel p-3">' +
+            '<div class="d-flex justify-content-between align-items-center mb-2">' +
+            '<strong class="text-iris-category" style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.03em">Full Record</strong>' +
+            '<button class="btn btn-sm btn-outline-secondary copy-json-btn" ' +
+            'data-row-b64="' + b64 + '" title="Copy as JSON">' +
+            '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25z"/><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25z"/></svg> Copy JSON</button>' +
+            '</div>' +
+            '<table class="table table-sm mb-0" style="font-size:0.82rem">';
+        for (var key in data) {
+            var v = data[key];
+            var display = (v !== null && typeof v === 'object') ? JSON.stringify(v) : String(v == null ? '' : v);
+            html += '<tr><td class="text-iris-category" style="width:180px;font-weight:600;white-space:nowrap">' +
+                escapeHtml(key) + '</td><td style="word-break:break-all">' + escapeHtml(display) + '</td></tr>';
+        }
+        html += '</table></div>';
+        return html;
+    }
+
     // ── Row expand: click row to show full record (#3) ──────────
     document.addEventListener('click', function (e) {
         var tr = e.target.closest('.expandable-row');
@@ -636,22 +723,7 @@ document.addEventListener('DOMContentLoaded', function () {
             try {
                 data = JSON.parse(decodeURIComponent(escape(atob(b64))));
             } catch (ex) { return; }
-            var html = '<div class="row-detail-panel p-3">' +
-                '<div class="d-flex justify-content-between align-items-center mb-2">' +
-                '<strong class="text-iris-category" style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.03em">Full Record</strong>' +
-                '<button class="btn btn-sm btn-outline-secondary copy-json-btn" ' +
-                'data-row-b64="' + b64 + '" title="Copy as JSON">' +
-                '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25z"/><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25z"/></svg> Copy JSON</button>' +
-                '</div>' +
-                '<table class="table table-sm mb-0" style="font-size:0.82rem">';
-            for (var key in data) {
-                var v = data[key];
-                var display = (v !== null && typeof v === 'object') ? JSON.stringify(v) : String(v == null ? '' : v);
-                html += '<tr><td class="text-iris-category" style="width:180px;font-weight:600;white-space:nowrap">' +
-                    escapeHtml(key) + '</td><td style="word-break:break-all">' + escapeHtml(display) + '</td></tr>';
-            }
-            html += '</table></div>';
-            row.child(html).show();
+            row.child(buildRowDetail(b64, data)).show();
             $tr.addClass('row-expanded');
         }
     });
@@ -789,20 +861,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ── Auto-refresh entity tables ──────────────────────────────
+    // ── Auto-refresh entity tables (preserves expanded rows) ────
     if (refreshInterval > 0) {
         setInterval(function () {
-            // Reload only initialized tables with cache bust, keep current page
-            Object.keys(tables).forEach(function (key) {
-                var t = tables[key];
-                if (key === 'shadowserver') {
-                    t.ajax.url('/api/dt/case/' + CASE_ID + '/shadowserver?refresh=1').load(null, false);
-                } else {
-                    var baseUrl = '/api/dt/case/' + CASE_ID + '/' + key;
-                    t.ajax.url(baseUrl + '?refresh=1').load(null, false);
-                }
-            });
-            lastRefresh = new Date();
+            refreshAllTables(true);
         }, refreshInterval * 1000);
     }
 });
