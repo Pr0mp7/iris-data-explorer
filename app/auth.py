@@ -19,8 +19,8 @@ def get_api_key():
 
 def require_auth():
     """Before-request handler: ensure user is authenticated."""
-    # Skip auth for health check and login routes
-    if request.path in ("/health", "/login", "/logout"):
+    # Skip auth for health check, login, OIDC callback, and static routes
+    if request.path in ("/health", "/login", "/logout", "/auth/callback", "/auth/keycloak"):
         return
     if request.path.startswith("/static/"):
         return

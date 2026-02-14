@@ -2,6 +2,7 @@ import logging
 import os
 import re
 
+from authlib.integrations.flask_client import OAuth
 from flask import Flask, session
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -10,7 +11,8 @@ from markupsafe import Markup
 
 from .config import Config
 
-APP_VERSION = "1.5.1"
+APP_VERSION = "1.6.0"
+oauth = OAuth()
 
 _TAG_RE = re.compile(r"<[^>]+>|<!--.*?-->", re.DOTALL)
 
@@ -46,6 +48,19 @@ def create_app():
     # Rate limiter
     limiter.init_app(app)
 
+    # Keycloak OIDC (optional)
+    if app.config["KEYCLOAK_ENABLED"]:
+        kc_url = app.config["KEYCLOAK_SERVER_URL"].rstrip("/")
+        realm = app.config["KEYCLOAK_REALM"]
+        oauth.init_app(app)
+        oauth.register(
+            name="keycloak",
+            client_id=app.config["KEYCLOAK_CLIENT_ID"],
+            client_secret=app.config["KEYCLOAK_CLIENT_SECRET"],
+            server_metadata_url=f"{kc_url}/realms/{realm}/.well-known/openid-configuration",
+            client_kwargs={"scope": "openid profile email iris-api"},
+        )
+
     # Make sessions permanent (uses PERMANENT_SESSION_LIFETIME from config)
     @app.before_request
     def make_session_permanent():
@@ -53,6 +68,7 @@ def create_app():
 
     app.jinja_env.filters["strip_tags"] = _strip_tags
     app.jinja_env.globals["app_version"] = APP_VERSION
+    app.jinja_env.globals["keycloak_enabled"] = app.config["KEYCLOAK_ENABLED"]
 
     from .routes import bp
     app.register_blueprint(bp)
@@ -68,15 +84,21 @@ def create_app():
     @app.after_request
     def set_security_headers(response):
         iris_ext = app.config["IRIS_EXTERNAL_URL"]
+        kc_origin = ""
+        if app.config["KEYCLOAK_ENABLED"]:
+            kc_origin = app.config["KEYCLOAK_SERVER_URL"].rstrip("/")
 
         # Full Content-Security-Policy (Finding 7)
+        connect_src = "'self'"
+        if kc_origin:
+            connect_src += f" {kc_origin}"
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             "script-src 'self'; "
             "style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; "
             "font-src 'self' https://fonts.gstatic.com; "
             "img-src 'self' data:; "
-            "connect-src 'self'; "
+            f"connect-src {connect_src}; "
             f"frame-ancestors 'self' {iris_ext}"
         )
         response.headers["X-Content-Type-Options"] = "nosniff"

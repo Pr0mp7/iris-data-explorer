@@ -67,3 +67,10 @@ class Config:
     SS_DB_USER = os.environ.get("SS_DB_USER", "shadowserver_viewer")
     SS_DB_PASSWORD = os.environ.get("SS_DB_PASSWORD", "")
     SS_DB_SSL_MODE = os.environ.get("SS_DB_SSL_MODE", "prefer")
+
+    # Keycloak SSO (optional — enables "Login with Keycloak" on login page)
+    KEYCLOAK_ENABLED = os.environ.get("KEYCLOAK_ENABLED", "false").lower() == "true"
+    KEYCLOAK_SERVER_URL = os.environ.get("KEYCLOAK_SERVER_URL", "http://localhost:8081")
+    KEYCLOAK_REALM = os.environ.get("KEYCLOAK_REALM", "sva-lab")
+    KEYCLOAK_CLIENT_ID = os.environ.get("KEYCLOAK_CLIENT_ID", "iris-data-explorer")
+    KEYCLOAK_CLIENT_SECRET = os.environ.get("KEYCLOAK_CLIENT_SECRET", "")

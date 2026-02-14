@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-02-14
+
+### Added
+- Keycloak SSO integration via OIDC (Authlib) — "Login with Keycloak" button on login page
+- OIDC callback route (`/auth/callback`) exchanges code for tokens and reads `iris_api_key` from Keycloak user attribute
+- Keycloak-aware logout — clears both Flask session and Keycloak session
+- API key fallback — collapsible manual API key login form when Keycloak is enabled
+- CSP updated to allow Keycloak server URL in `connect-src`
+- Configuration: `KEYCLOAK_ENABLED`, `KEYCLOAK_SERVER_URL`, `KEYCLOAK_REALM`, `KEYCLOAK_CLIENT_ID`, `KEYCLOAK_CLIENT_SECRET`
+
 ## [1.5.0] - 2026-02-14
 
 ### Added
@@ -159,6 +169,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docker deployment with healthcheck
 - Lab deployment with external Docker network support
 
+[1.6.0]: https://github.com/Pr0mp7/iris-data-explorer/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/Pr0mp7/iris-data-explorer/compare/v1.4.2...v1.5.0
 [1.4.2]: https://github.com/Pr0mp7/iris-data-explorer/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/Pr0mp7/iris-data-explorer/compare/v1.4.0...v1.4.1
