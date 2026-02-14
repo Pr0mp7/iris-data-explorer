@@ -297,26 +297,27 @@ document.addEventListener('DOMContentLoaded', function () {
                 dataSrc: 'data'
             },
             columns: [
-                { data: 'case_id' },
-                { data: 'case_name', render: function (d) { return escapeHtml(d); } },
-                { data: 'case_description', render: function (d) { return escapeHtml(truncate(stripHtml(d), 120)); } },
-                { data: 'case_soc_id', defaultContent: '' },
-                { data: 'status_id', defaultContent: '', render: function (d) {
+                { data: 'case_id', width: '40px' },
+                { data: 'case_name', width: '22%', render: function (d) { return '<span title="' + escapeHtml(d) + '">' + escapeHtml(truncate(d, 50)) + '</span>'; } },
+                { data: 'case_description', width: '20%', render: function (d) { return escapeHtml(truncate(stripHtml(d), 60)); } },
+                { data: 'case_soc_id', width: '70px', defaultContent: '' },
+                { data: 'status_id', width: '70px', defaultContent: '', render: function (d) {
                     return d != null ? statusBadge(d) : '';
                 }},
-                { data: 'severity_id', defaultContent: '', render: function (d) {
+                { data: 'severity_id', width: '75px', defaultContent: '', render: function (d) {
                     return d != null ? severityBadge(d) : '';
                 }},
-                { data: 'owner', defaultContent: '', render: function (d) {
+                { data: 'owner', width: '90px', defaultContent: '', render: function (d) {
                     if (!d) return '';
-                    return escapeHtml(d.user_name || d.user_login || d);
+                    var name = d.user_name || d.user_login || d;
+                    return '<span title="' + escapeHtml(name) + '">' + escapeHtml(truncate(name, 12)) + '</span>';
                 }},
-                { data: 'open_date', defaultContent: '' },
-                { data: 'close_date', defaultContent: '' },
-                { data: 'case_id', render: function (d) {
-                    return '<a href="/case/' + d + '" class="btn btn-sm btn-primary">Explore</a> ' +
+                { data: 'open_date', width: '85px', defaultContent: '' },
+                { data: 'close_date', width: '85px', defaultContent: '' },
+                { data: 'case_id', width: '110px', orderable: false, render: function (d) {
+                    return '<a href="/case/' + d + '" class="btn btn-sm btn-primary py-0 px-2">Explore</a> ' +
                            '<a href="' + escapeHtml(irisUrl) + '/case?cid=' + d + '" target="_blank" ' +
-                           'class="btn btn-sm btn-outline-info" title="Open in IRIS">IRIS</a>';
+                           'class="btn btn-sm btn-outline-info py-0 px-2" title="Open in IRIS">IRIS</a>';
                 }}
             ],
             language: {

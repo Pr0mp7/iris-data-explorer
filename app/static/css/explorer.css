@@ -84,7 +84,6 @@ body {
     color: var(--iris-body-color);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden;
 }
 
 a {
@@ -357,10 +356,16 @@ table.dataTable tbody td {
 }
 
 table.dataTable td {
-    max-width: 400px;
+    max-width: 280px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* Ensure tables respect container width */
+table.dataTable {
+    table-layout: fixed;
+    width: 100% !important;
 }
 
 /* DataTables controls */
