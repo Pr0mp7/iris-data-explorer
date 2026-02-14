@@ -84,6 +84,7 @@ body {
     color: var(--iris-body-color);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
 }
 
 a {
@@ -294,9 +295,7 @@ a:hover {
     padding-top: 1rem;
 }
 
-.tab-content .dataTables_wrapper {
-    overflow-x: auto;
-}
+/* overflow-x handled by .dataTables_wrapper rule */
 
 /* ── Buttons ──────────────────────────────────────────────── */
 .btn-primary {
@@ -816,22 +815,24 @@ table.dataTable td {
 }
 
 /* ── Sticky table headers (#14) ──────────────────────────── */
-.dataTables_scrollHead,
-table.dataTable thead {
+/* Sticky works inside the scrollable DataTables wrapper, not the page */
+.dataTables_wrapper {
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+table.dataTable thead th {
     position: sticky;
     top: 0;
     z-index: 2;
     background: var(--iris-card-bg);
 }
 
-table.dataTable thead th {
-    background: var(--iris-card-bg);
-}
-
 .dt-column-filters th {
     position: sticky;
-    top: 36px;
+    top: 34px;
     z-index: 1;
+    background: var(--iris-filter-bg);
 }
 
 /* ── Entity count badges on tabs (#1) ────────────────────── */
