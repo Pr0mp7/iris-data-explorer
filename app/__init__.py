@@ -10,7 +10,7 @@ from markupsafe import Markup
 
 from .config import Config
 
-APP_VERSION = "1.5.0"
+APP_VERSION = "1.5.1"
 
 _TAG_RE = re.compile(r"<[^>]+>|<!--.*?-->", re.DOTALL)
 

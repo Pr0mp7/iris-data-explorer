@@ -296,13 +296,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function startRefreshSpin() {
         if (refreshBtn) {
-            refreshBtn.classList.add('refreshing');
+            refreshBtn.innerHTML = '<span class="refresh-spinner"></span>';
+            refreshBtn.disabled = true;
         }
     }
 
     function stopRefreshSpin() {
         if (refreshBtn) {
-            refreshBtn.classList.remove('refreshing');
+            refreshBtn.innerHTML = '&#8635;';
+            refreshBtn.disabled = false;
         }
     }
 

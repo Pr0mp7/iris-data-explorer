@@ -993,17 +993,20 @@ table.dataTable thead th {
     border-color: var(--iris-link);
 }
 
-/* Spin animation while refreshing */
+/* Inline spinner shown inside refresh button while loading */
 @keyframes refresh-spin {
-    from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
 
-.btn-refresh.refreshing {
-    color: var(--iris-info);
-    border-color: var(--iris-info);
-    animation: refresh-spin 0.8s linear infinite;
-    pointer-events: none;
+.refresh-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--iris-border);
+    border-top-color: var(--iris-info);
+    border-radius: 50%;
+    animation: refresh-spin 0.6s linear infinite;
+    vertical-align: middle;
 }
 
 /* ── Prev/Next navigation (#8) ───────────────────────────── */
