@@ -299,6 +299,22 @@ def _apply_column_filters(data, args):
     return data
 
 
+# ── Entity counts (for upfront badge loading) ────────────────────
+
+@bp.route("/api/case/<int:case_id>/counts")
+def case_entity_counts(case_id):
+    """Return record counts for all entity types — used to populate tab badges on page load."""
+    ds = _get_data_source()
+    counts = {}
+    for entity in ENTITIES:
+        try:
+            data = ds.get_entity(case_id, entity)
+            counts[entity] = len(data) if isinstance(data, list) else 0
+        except Exception:
+            counts[entity] = 0
+    return jsonify(counts)
+
+
 # ── IRIS Lookup API (#4 — resolve IDs to human labels) ───────────
 
 @bp.route("/api/lookups")

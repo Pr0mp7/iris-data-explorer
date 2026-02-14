@@ -474,13 +474,16 @@ document.addEventListener('DOMContentLoaded', function () {
             { data: 'task_description', defaultContent: '', render: function (d) { return escapeHtml(truncate(stripHtml(d), 200)); } }
         ],
         notes: [
-            { data: 'note_id', render: function (d, t, r) {
-                return irisLink('/case/notes/' + d + '?cid=' + CASE_ID, d);
+            { data: 'note_id', defaultContent: '', render: function (d, t, r) {
+                var id = d || val(r, ['id']);
+                return irisLink('/case/notes/' + id + '?cid=' + CASE_ID, id);
             }},
-            { data: 'note_title', render: function (d) { return escapeHtml(d); } },
+            { data: 'note_title', defaultContent: '', render: function (d, t, r) {
+                return escapeHtml(d || val(r, ['title']) || '');
+            }},
+            { data: 'note_directory', defaultContent: '' },
             { data: 'note_creationdate', defaultContent: '' },
-            { data: 'note_lastupdate', defaultContent: '' },
-            { data: 'note_content', defaultContent: '', render: function (d) { return escapeHtml(truncate(stripHtml(d), 300)); } }
+            { data: 'note_lastupdate', defaultContent: '' }
         ],
         evidences: [
             { data: 'evidence_id', defaultContent: '', render: function (d, t, r) {
@@ -502,6 +505,13 @@ document.addEventListener('DOMContentLoaded', function () {
     registerDeferred('tasks', '#dt-tasks', entityColumns.tasks);
     registerDeferred('notes', '#dt-notes', entityColumns.notes);
     registerDeferred('evidences', '#dt-evidences', entityColumns.evidences);
+
+    // #1: Fetch all entity counts upfront so badges show immediately
+    $.getJSON('/api/case/' + CASE_ID + '/counts', function (counts) {
+        for (var entity in counts) {
+            updateTabBadge(entity, counts[entity]);
+        }
+    });
 
     // ── Shadowserver tab (dynamic correlation) ─────────────────
     var ssTable = document.getElementById('dt-shadowserver');
