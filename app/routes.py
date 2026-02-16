@@ -99,7 +99,6 @@ def auth_keycloak():
         if key.startswith("_state_") or key.startswith("_authlib_"):
             session.pop(key, None)
     redirect_uri = url_for("main.auth_callback", _external=True)
-    log.debug("Keycloak redirect — session keys before redirect: %s", list(session.keys()))
     return oauth.keycloak.authorize_redirect(redirect_uri, prompt="login")
 
 
@@ -109,8 +108,6 @@ def auth_callback():
     if not current_app.config["KEYCLOAK_ENABLED"]:
         return redirect(url_for("main.login"))
 
-    log.info("Keycloak callback — session keys: %s, request state: %s",
-             list(session.keys()), request.args.get("state", "")[:12])
     try:
         token = oauth.keycloak.authorize_access_token()
     except Exception as e:
