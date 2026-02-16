@@ -112,13 +112,15 @@ def auth_callback():
         token = oauth.keycloak.authorize_access_token()
     except Exception as e:
         log.warning("Keycloak token exchange failed: %s", e)
-        # On state mismatch, clear stale OAuth state and auto-retry
-        if "mismatching_state" in str(e):
+        # On state mismatch, clear stale OAuth state and retry once
+        if "mismatching_state" in str(e) and not session.pop("_kc_retry", False):
             for key in list(session.keys()):
                 if key.startswith("_authlib_"):
                     del session[key]
+            session["_kc_retry"] = True
             log.info("Cleared stale OAuth state, redirecting to retry Keycloak login")
             return redirect(url_for("main.auth_keycloak"))
+        session.pop("_kc_retry", None)
         return redirect(url_for("main.login", error="keycloak_failed"))
 
     userinfo = token.get("userinfo", {})
