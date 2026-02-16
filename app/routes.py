@@ -94,6 +94,10 @@ def auth_keycloak():
     """Initiate Keycloak OIDC login."""
     if not current_app.config["KEYCLOAK_ENABLED"]:
         return redirect(url_for("main.login"))
+    # Clear stale OAuth state from previous attempts to prevent state mismatch
+    for key in list(session.keys()):
+        if key.startswith("_authlib_"):
+            del session[key]
     redirect_uri = url_for("main.auth_callback", _external=True)
     return oauth.keycloak.authorize_redirect(redirect_uri)
 
@@ -108,6 +112,13 @@ def auth_callback():
         token = oauth.keycloak.authorize_access_token()
     except Exception as e:
         log.warning("Keycloak token exchange failed: %s", e)
+        # On state mismatch, clear stale OAuth state and auto-retry
+        if "mismatching_state" in str(e):
+            for key in list(session.keys()):
+                if key.startswith("_authlib_"):
+                    del session[key]
+            log.info("Cleared stale OAuth state, redirecting to retry Keycloak login")
+            return redirect(url_for("main.auth_keycloak"))
         return redirect(url_for("main.login", error="keycloak_failed"))
 
     userinfo = token.get("userinfo", {})
