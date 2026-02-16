@@ -99,7 +99,9 @@ def auth_keycloak():
         if key.startswith("_authlib_"):
             del session[key]
     redirect_uri = url_for("main.auth_callback", _external=True)
-    return oauth.keycloak.authorize_redirect(redirect_uri)
+    # Force Keycloak to show login screen — prevents silent SSO redirect
+    # that causes state mismatch when Flask session has expired
+    return oauth.keycloak.authorize_redirect(redirect_uri, prompt="login")
 
 
 @bp.route("/auth/callback")
@@ -112,15 +114,10 @@ def auth_callback():
         token = oauth.keycloak.authorize_access_token()
     except Exception as e:
         log.warning("Keycloak token exchange failed: %s", e)
-        # On state mismatch, clear stale OAuth state and retry once
-        if "mismatching_state" in str(e) and not session.pop("_kc_retry", False):
-            for key in list(session.keys()):
-                if key.startswith("_authlib_"):
-                    del session[key]
-            session["_kc_retry"] = True
-            log.info("Cleared stale OAuth state, redirecting to retry Keycloak login")
-            return redirect(url_for("main.auth_keycloak"))
-        session.pop("_kc_retry", None)
+        # Clear stale OAuth state so next attempt starts fresh
+        for key in list(session.keys()):
+            if key.startswith("_authlib_"):
+                del session[key]
         return redirect(url_for("main.login", error="keycloak_failed"))
 
     userinfo = token.get("userinfo", {})
